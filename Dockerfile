@@ -1,4 +1,4 @@
-#FROM alpine:latest
+FROM alpine:latest
 
 # Add the commands needed to put your compiled go binary in the container and
 # run it when the container starts.
@@ -12,11 +12,13 @@
 #
 # $ docker build . -t kadlab
 # syntax=docker/dockerfile:1
-FROM golang:1.16-alpine AS build
+#FROM golang:1.16-alpine AS build
+#FROM larjim/kademlialab
 WORKDIR ./sprint0
 
 COPY *.go ./
 
+RUN apk add --no-cache go
 RUN go mod init example.com/m/v2
 RUN go build -o /helloworld.go
 
