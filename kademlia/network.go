@@ -1,14 +1,18 @@
-package d7024e
+package kademlia
+
+import (
+	"fmt"
+)
 
 type Network struct {
 }
 
 func Listen(ip string, port int) {
-	// TODO
+	fmt.Println("Listening to " + ip)
 }
 
-func (network *Network) SendPingMessage(contact *Contact) {
-	// TODO
+func (network *Network) SendPingMessage() {
+	fmt.Println("Sending message...")
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {

@@ -1,3 +1,3 @@
-module github.com/albernnV/D7024E
+module project
 
 go 1.16

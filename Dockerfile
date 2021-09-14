@@ -14,12 +14,13 @@ FROM alpine:latest
 # syntax=docker/dockerfile:1
 #FROM golang:1.16-alpine AS build
 #FROM larjim/kademlialab
-WORKDIR ./sprint0
-
-COPY *.go ./
-
+WORKDIR /D7024E
 RUN apk add --no-cache go
-RUN go mod init example.com/m/v2
-RUN go build -o /helloworld.go
 
-CMD [ "/helloworld.go" ]
+COPY go.mod .
+RUN go mod download
+COPY . .
+
+RUN go build -o /main.go
+
+CMD [ "/main.go" ]
