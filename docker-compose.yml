@@ -13,7 +13,7 @@ services:
     tty: true
     deploy:
       mode: replicated
-      replicas: 50
+      replicas: 2
 #        resources:
 #           limits:
 #              cpus: "0.1"
@@ -27,7 +27,15 @@ services:
 #      - "4000:80"
     networks:
       - kademlia_network
+  bootstrappingNode:
+    image: bootstrap:latest
+    networks:
+      - kademlia_network
       
 networks:
   kademlia_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
 
