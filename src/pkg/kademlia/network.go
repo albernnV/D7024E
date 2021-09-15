@@ -4,16 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"strconv"
 )
 
 type Network struct {
 	Name string
 }
 
-func Listen(ip string, port int) {
-	address := ip + ":" + strconv.Itoa(port)
-	ln, _ := net.Listen("tcp", address)
+func Listen(ip string, port string) {
+	fmt.Println("Listening....")
+	//address := ip + ":" + strconv.Itoa(port)
+	ln, _ := net.Listen("tcp", ip+":"+port)
 
 	conn, _ := ln.Accept()
 	message, _ := bufio.NewReader(conn).ReadString('\n')
