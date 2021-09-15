@@ -17,7 +17,8 @@ func Listen(ip string, port int) {
 
 	conn, _ := ln.Accept()
 	message, _ := bufio.NewReader(conn).ReadString('\n')
-	if message == "PING" {
+	fmt.Println("Message recieved:" + string(message))
+	if string(message) == "PING" {
 		fmt.Fprint(conn, "PONG")
 	}
 }
@@ -26,7 +27,8 @@ func (network *Network) SendPingMessage(address string) {
 	conn, _ := net.Dial("tcp", address)
 	fmt.Fprintf(conn, "PING"+"\n")
 	message, _ := bufio.NewReader(conn).ReadString('\n')
-	if message == "PONG" {
+	fmt.Println("Message recieved:" + string(message))
+	if string(message) == "PONG" {
 		fmt.Println("PONG recieved")
 	}
 }
