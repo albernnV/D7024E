@@ -12,7 +12,6 @@ type Network struct {
 }
 
 func Listen(ip string, port int) {
-	fmt.Println("Listening...")
 	address := ip + ":" + strconv.Itoa(port)
 	ln, _ := net.Listen("tcp", address)
 
