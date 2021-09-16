@@ -17,6 +17,8 @@ FROM alpine:latest
 WORKDIR /BootstrappingNode
 RUN apk add --no-cache go
 
+COPY go.mod .
+RUN go mod download
 COPY . .
 
 RUN go build -o /bootstrap.go
