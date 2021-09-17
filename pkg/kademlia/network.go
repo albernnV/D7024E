@@ -75,6 +75,12 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	if err != nil {
 		fmt.Printf("Couldn't send response %v", err)
 	}
+	message, err := bufio.NewReader(conn).ReadString('\n')
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Message recieved:" + string(message))
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
