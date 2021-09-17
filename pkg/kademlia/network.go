@@ -25,7 +25,7 @@ func Listen() {
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 1234,
-		IP:   net.ParseIP("127.0.0.1"),
+		IP:   net.ParseIP("0.0.0.0"),
 	}
 	ser, err := net.ListenUDP("udp", &addr)
 	if err != nil {
@@ -54,7 +54,7 @@ func (network *Network) SendPingMessage() {
 	}*/
 
 	p := make([]byte, 2048)
-	conn, err := net.Dial("udp", "127.0.0.1:1234")
+	conn, err := net.Dial("udp", "172.18.0.3:1234")
 	if err != nil {
 		fmt.Printf("Some error %v", err)
 		return
@@ -75,12 +75,6 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	if err != nil {
 		fmt.Printf("Couldn't send response %v", err)
 	}
-	message, err := bufio.NewReader(conn).ReadString('\n')
-
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println("Message recieved:" + string(message))
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
