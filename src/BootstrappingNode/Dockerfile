@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:latest 
 
 # Add the commands needed to put your compiled go binary in the container and
 # run it when the container starts.
@@ -17,9 +17,9 @@ FROM alpine:latest
 WORKDIR /BootstrappingNode
 RUN apk add --no-cache go
 
-COPY go.mod .
-RUN go mod download
 COPY . .
+RUN go mod init github.com/albernnV/D7024E/src/BootstrappingNode
+RUN go get github.com/albernnV/D7024E/pkg/kademlia
 
 RUN go build -o /bootstrap.go
 

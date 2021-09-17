@@ -11,8 +11,9 @@ services:
     image: kadlab:latest # Make sure your Docker image has this name.
     stdin_open: true
     tty: true
-    volumes:
-      - ".:/src/main"
+    #volumes:
+     # - ./:/KademliaNode
+    #command: touch /src/KademliaNode/main
     deploy:
       mode: replicated
       replicas: 1
@@ -30,9 +31,11 @@ services:
     networks:
       - kademlia_network
   bootstrappingNode:
-    volumes: 
-      - ".:/src/BootstrappingNode"
+    
     image: bootstrap:latest
+    #volumes: 
+     # - ./:/BootstrappingNode
+    #command: touch /src/BootstrappingNode/bootstrap
     networks:
       - kademlia_network
       
