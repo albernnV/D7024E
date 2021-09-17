@@ -12,6 +12,7 @@ type Network struct {
 }
 
 func Listen(ip string, port int) {
+	fmt.Println("Listening...")
 	address := ip + ":" + strconv.Itoa(port)
 	ln, _ := net.Listen("tcp", address)
 
@@ -19,7 +20,7 @@ func Listen(ip string, port int) {
 	message, _ := bufio.NewReader(conn).ReadString('\n')
 	fmt.Println("Message recieved:" + string(message))
 	if string(message) == "PING" {
-		fmt.Fprint(conn, "PONG")
+		fmt.Fprintf(conn, "PONG")
 	}
 }
 

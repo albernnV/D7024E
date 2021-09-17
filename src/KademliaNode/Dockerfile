@@ -17,9 +17,9 @@ FROM alpine:latest
 WORKDIR /D7024E
 RUN apk add --no-cache go
 
-COPY go.mod .
-RUN go mod download
 COPY . .
+#RUN go get github.com/albernnV/D7024E/pkg/kademlia
+#RUN go mod download
 
 RUN go build -o /main.go
 
