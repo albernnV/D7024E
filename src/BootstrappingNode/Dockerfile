@@ -18,8 +18,8 @@ WORKDIR /BootstrappingNode
 RUN apk add --no-cache go
 
 COPY . .
-#RUN go get github.com/albernnV/D7024E/pkg/kademlia
-#RUN go mod download
+RUN go mod init github.com/albernnV/D7024E/src/BootstrappingNode
+RUN go get github.com/albernnV/D7024E/pkg/kademlia
 
 RUN go build -o /bootstrap.go
 

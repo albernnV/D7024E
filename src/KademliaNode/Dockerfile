@@ -18,6 +18,8 @@ WORKDIR /D7024E
 RUN apk add --no-cache go
 
 COPY . .
+RUN go mod init github.com/albernnV/D7024E/src/KademliaNode
+RUN go get github.com/albernnV/D7024E/pkg/kademlia
 #RUN go get github.com/albernnV/D7024E/pkg/kademlia
 #RUN go mod download
 

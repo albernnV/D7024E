@@ -27,11 +27,11 @@ func Listen(ip string, port int) {
 func (network *Network) SendPingMessage(address string) {
 	conn, _ := net.Dial("tcp", address)
 	fmt.Fprintf(conn, "PING"+"\n")
-	message, _ := bufio.NewReader(conn).ReadString('\n')
-	fmt.Println("Message recieved:" + string(message))
-	if string(message) == "PONG" {
-		fmt.Println("PONG recieved")
+	message, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		fmt.Println(err)
 	}
+	fmt.Println("Message recieved:" + string(message))
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
