@@ -27,18 +27,10 @@ services:
 #      - "4000:80"
     networks:
       - kademlia_network
-  bootstrappingNode:
-    image: bootstrap:latest
-    #volumes: 
-     # - ./:/BootstrappingNode
-    #command: touch /src/BootstrappingNode/bootstrap
-    networks:
-      - kademlia_network
-      
+       
 networks:
   kademlia_network:
     ipam:
       driver: default
       config:
         - subnet: 172.18.0.0/16
-

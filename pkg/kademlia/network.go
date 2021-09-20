@@ -15,7 +15,7 @@ func Listen() {
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 8000,
-		IP:   net.ParseIP("0.0.0.0"),
+		IP:   net.ParseIP(""),
 	}
 	ser, err := net.ListenUDP("udp", &addr)
 	if err != nil {
@@ -38,7 +38,7 @@ func (network *Network) SendPingMessage() {
 	p := make([]byte, 2048)
 	conn, err := net.Dial("udp", "172.18.0.3:8000")
 	if err != nil {
-		fmt.Printf("Some error %v", err)
+		fmt.Printf("Somee error %v", err)
 		return
 	}
 	fmt.Fprintf(conn, "PIIING")
