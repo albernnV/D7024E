@@ -14,7 +14,7 @@ FROM alpine:latest
 # syntax=docker/dockerfile:1
 #FROM golang:1.16-alpine AS build
 #FROM larjim/kademlialab
-WORKDIR /D7024E
+WORKDIR /KademliaNode
 RUN apk add --no-cache go
 
 COPY . .
