@@ -7,6 +7,14 @@
 
 version: "3"
 services:
+  bootstrappingNode:
+    image: bootstrap:latest
+    #volumes: 
+    # - ./:/BootstrappingNode
+    #command: touch /src/BootstrappingNode/bootstrap
+    networks:
+      kademlia_network:
+        ipv4_address: 172.18.0.3
   kademliaNodes:
     image: kadlab:latest # Make sure your Docker image has this name.
     stdin_open: true
