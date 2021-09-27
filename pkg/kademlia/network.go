@@ -7,7 +7,6 @@ import (
 )
 
 type Network struct {
-	Name string
 }
 
 func Listen() {
@@ -59,7 +58,7 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	}
 }
 
-func (network *Network) SendFindContactMessage(contact *Contact) {
+func (network *Network) SendFindContactMessage(contact *Contact) []Contact {
 	// TODO
 }
 
