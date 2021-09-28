@@ -39,23 +39,28 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 	shortlist.contacts = closestNodes
 	//Initiate channel where shortlists from the goroutines will be written to
 	ch := make(chan []Contact)
-	//Send find node RPC to alpha number of contacts in the shortlist
-	go SendFindNodeRPC(&shortlist.contacts[0], kademlia.network, ch)
-	go SendFindNodeRPC(&shortlist.contacts[1], kademlia.network, ch)
-	go SendFindNodeRPC(&shortlist.contacts[2], kademlia.network, ch)
+	closerNodeHasBeenFound := true
+	for closerNodeHasBeenFound {
+		//Send find node RPC to alpha number of contacts in the shortlist
+		for i := 0; i < kademlia.alpha; i++ {
+			go SendFindNodeRPC(&shortlist.contacts[i], kademlia.network, ch)
+		}
 
-	//Retrieve all shortlists from the contacted nodes
-	s1, s2, s3 := <-ch, <-ch, <-ch
-	s4 := append(s1, s2...)
-	newShortList := ContactCandidates{append(s4, s3...)}
-	newShortList.Sort()
-	shortlist = newShortList
-	if shortlist.contacts[0].Less(closestContact) {
-		closestContact = &shortlist.contacts[0]
-		//Continue with next round
-	} else {
-		//Send a RPC to each of the k closest nodes that has not already been queried
-		//Stop FIND_NODE_RPC
+		//Retrieve all shortlists from the contacted nodes
+		subShortlist1, subShortlist2, subShortlist3 := <-ch, <-ch, <-ch
+		s := append(subShortlist1, subShortlist2...)
+		newShortList := ContactCandidates{append(s, subShortlist3...)}
+		//Sort the new shortlist and remove any duplicates
+		newShortList.Sort()
+		// TODO: Remove dublicates
+		shortlist = newShortList
+		if shortlist.contacts[0].Less(closestContact) {
+			closestContact = &shortlist.contacts[0]
+		} else {
+			closerNodeHasBeenFound = false
+			//Send a RPC to each of the k closest nodes that has not already been queried
+			//Stop FIND_NODE_RPC
+		}
 	}
 }
 
