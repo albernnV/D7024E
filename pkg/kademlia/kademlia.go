@@ -38,16 +38,22 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 	var shortlist ContactCandidates
 	shortlist.contacts = closestNodes
 	//Initiate channel where shortlists from the goroutines will be written to
-	ch := make(chan []Contact)
+	shortlistCh := make(chan []Contact)
+	hasNotAnsweredCh := make(chan Contact)
+
+	hasBeenContactedList := ContactCandidates{}
+	//hasNotAnsweredList := ContactCandidates{}
+
 	closerNodeHasBeenFound := true
 	for closerNodeHasBeenFound {
 		//Send find node RPC to alpha number of contacts in the shortlist
 		for i := 0; i < kademlia.alpha; i++ {
-			go SendFindNodeRPC(&shortlist.contacts[i], kademlia.network, ch)
+			go SendFindNodeRPC(&shortlist.contacts[i], target, kademlia.network, shortlistCh, hasNotAnsweredCh)
 		}
-
+		//Add contacted nodes to the list
+		hasBeenContactedList.Append(shortlist.GetContacts(kademlia.alpha))
 		//Retrieve all shortlists from the contacted nodes
-		subShortlist1, subShortlist2, subShortlist3 := <-ch, <-ch, <-ch
+		subShortlist1, subShortlist2, subShortlist3 := <-shortlistCh, <-shortlistCh, <-shortlistCh
 		s := append(subShortlist1, subShortlist2...)
 		newShortList := ContactCandidates{append(s, subShortlist3...)}
 		//Sort the new shortlist and remove any duplicates
@@ -82,9 +88,9 @@ func findClosestContact(contacts []Contact, target *Contact) *Contact {
 
 //Sends a find node RPC to the contact which will send back the k closest nodes. These contacts will be written to the
 //channel to be retireved
-func SendFindNodeRPC(contact *Contact, network *Network, channel chan []Contact) {
-	closestNodes := network.SendFindContactMessage(contact)
-	channel <- closestNodes
+func SendFindNodeRPC(contact *Contact, target *Contact, network *Network, shortlistChannel chan []Contact, hasNotAnsweredChannel chan Contact) {
+	closestNodes := network.SendFindContactMessage(contact, target, hasNotAnsweredChannel)
+	shortlistChannel <- closestNodes
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
