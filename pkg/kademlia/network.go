@@ -122,7 +122,6 @@ func StringToContact(contactAsString string) Contact {
 	newKademliaID := NewKademliaID(id)
 	newContact := NewContact(newKademliaID, address)
 	return newContact
-
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
