@@ -2,6 +2,7 @@ package kademlia
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"net"
 )
@@ -60,12 +61,19 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 
 func (network *Network) SendFindContactMessage(contact *Contact) []Contact {
 	// TODO
+	return []Contact{}
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
 
-func (network *Network) SendStoreMessage(data []byte) {
-	// TODO
+func (network *Network) SendStoreMessage(data []byte, contact *Contact, target Contact) {
+	conn, err := net.Dial("tcp", contact.Address)
+	if err != nil {
+		fmt.Printf("Some error %v\n", err)
+	}
+
+	dataToString := hex.EncodeToString(data)
+	fmt.Fprintf(conn, "SEND_STORE_RPC;"+dataToString+";"+target.ID.String())
 }

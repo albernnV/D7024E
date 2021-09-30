@@ -1,12 +1,17 @@
 package kademlia
 
+import (
+	"crypto/sha1"
+	"encoding/hex"
+)
+
 type Kademlia struct {
 	alpha        int
 	routingTable *RoutingTable
 	network      *Network
 }
 
-func (kademlia *Kademlia) LookupContact(target *Contact) {
+func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	// TODO
 	//FindClosestContacts() for target
 	//
@@ -62,6 +67,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 			//Stop FIND_NODE_RPC
 		}
 	}
+	return &ContactCandidates{}
 }
 
 //Calculates the distances from the contacts to the target contact and returns the contact with the shortest distance
@@ -92,5 +98,28 @@ func (kademlia *Kademlia) LookupData(hash string) {
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
-	// TODO
+	//Hash the data to get a newKademliaID
+	fileKademliaID := HashingData(data)
+	newContact := NewContact(fileKademliaID, "")
+
+	// Find closest contacts for the key
+	closestsNodes := kademlia.LookupContact(&newContact)
+
+	//SendStore RPCs
+	for _, nodeToStoreAt := range closestsNodes.contacts {
+		go kademlia.network.SendStoreMessage(data, &nodeToStoreAt, newContact)
+	}
+
+}
+
+func HashingData(data []byte) *KademliaID {
+	//hash the data
+	stringToBytes := sha1.New()
+	stringToBytes.Write(data)
+	hashedData := stringToBytes.Sum(nil)
+	// Encodes the hash back to string to make it a new kademlia ID
+	hashedStringData := hex.EncodeToString(hashedData)
+	hashedKademliaID := NewKademliaID(hashedStringData)
+
+	return hashedKademliaID
 }
