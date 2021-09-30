@@ -59,7 +59,7 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) []Contact {
-	// TODO
+	return []Contact{}
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
