@@ -59,23 +59,30 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact, hasNotAnsweredChannel chan Contact) []Contact {
+	//Establish connection
 	conn, err := net.Dial("tcp", contact.Address)
+	//Send contact to channel to mark as inactive
 	if err != nil {
 		hasNotAnsweredChannel <- *contact
 		return []Contact{}
 	}
 	reader := bufio.NewReader(conn)
 	targetAsString := target.String()
+	//Send find node rpc together with the target contact
 	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+"\n")
+	//Wait for showrtlist as answer
 	shortListString, err := reader.ReadString('\n')
-	shortList := preprocessShortlist(shortListString)
 	if err != nil {
 		hasNotAnsweredChannel <- *contact
 		return []Contact{}
 	}
+	shortList := preprocessShortlist(shortListString)
 	return shortList
 }
 
+//When receiving a shortlist it will be a string with the structure that looks like this:
+//	"contact(ID, IP);contact(ID, IP)..."
+//This function will convert this string into a list containing all the contacts
 func preprocessShortlist(shortlistString string) []Contact {
 	var contactString string
 	shortlist := make([]Contact, 0)
@@ -91,11 +98,13 @@ func preprocessShortlist(shortlistString string) []Contact {
 	return shortlist
 }
 
+//Takes as input a string structured as "contact(ID, IP) and converts it into a Contact"
 func StringToContact(contactAsString string) Contact {
 	var address string
 	var id string
 	contactRune := []rune(contactAsString)
 	hasReadAddress := false
+	//Skip 8 first letters since they always start with "contact("
 	for i := 8; i < len(contactRune); i++ {
 		if string(contactRune[i]) == ")" {
 			break
