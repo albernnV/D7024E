@@ -69,14 +69,15 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 			closestContact = &shortlist.contacts[0]
 		} else {
 			closerNodeHasBeenFound = false
-			//Send a RPC to each of the k closest nodes that has not already been queried
+			//Find closest nodes that have not yet been contacted
 			nodesToContact := findNotContactedNodes(&shortlist, &hasBeenContactedList)
 			nodesToContact.Sort()
 			nodesToContact.RemoveDuplicates()
+			//Send a RPC to each of the k closest nodes that has not already been contacted
 			for _, nodeToContact := range nodesToContact.GetContacts(bucketSize) {
 				go SendFindNodeRPC(&nodeToContact, target, kademlia.network, shortlistCh, hasNotAnsweredCh)
 			}
-			//Retrieve shortlists
+			//Retrieve shortlists from contacted nodes
 			for i := 0; i < bucketSize; i++ {
 				newShortList := <-shortlistCh
 				shortlist.Append(newShortList)
@@ -84,6 +85,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 			shortlist.Sort()
 			shortlist.RemoveDuplicates()
 			//Remove inactive nodes
+
 			shortlist.contacts = shortlist.GetContacts(bucketSize)
 			//Stop FIND_NODE_RPC
 		}
