@@ -6,7 +6,7 @@ type Kademlia struct {
 	network      *Network
 }
 
-func (kademlia *Kademlia) LookupContact(target *Contact) {
+func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	// TODO
 	//FindClosestContacts() for target
 	//
@@ -56,10 +56,8 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 		inactiveNodes := retrieveInactiveNodes(kademlia.alpha, hasNotAnsweredCh)
 		hasNotAnsweredList.Append(inactiveNodes)
 		//Retrieve all shortlists from the contacted nodes
-		for i := 0; i < kademlia.alpha; i++ {
-			newShortList := <-shortlistCh
-			shortlist.Append(newShortList)
-		}
+		newShortlists := retrieveShortlists(kademlia.alpha, shortlistCh)
+		shortlist.Append(newShortlists)
 		//Sort the new shortlist and remove any duplicates
 		shortlist.Sort()
 		shortlist.RemoveDuplicates()
@@ -78,18 +76,27 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 				go SendFindNodeRPC(&nodeToContact, target, kademlia.network, shortlistCh, hasNotAnsweredCh)
 			}
 			//Retrieve shortlists from contacted nodes
-			for i := 0; i < bucketSize; i++ {
-				newShortList := <-shortlistCh
-				shortlist.Append(newShortList)
-			}
+			newShortlists := retrieveShortlists(kademlia.alpha, shortlistCh)
+			shortlist.Append(newShortlists)
 			shortlist.Sort()
 			shortlist.RemoveDuplicates()
-			//Remove inactive nodes
+			//Remove all inactive nodes from the shortlist
+			shortlist.contacts = removeInactiveNodes(shortlist, hasNotAnsweredList)
 
 			shortlist.contacts = shortlist.GetContacts(bucketSize)
 			//Stop FIND_NODE_RPC
 		}
 	}
+	return &shortlist
+}
+
+func retrieveShortlists(alpha int, shortlistCh chan []Contact) []Contact {
+	shortlists := make([]Contact, 0)
+	for i := 0; i < alpha; i++ {
+		newShortList := <-shortlistCh
+		shortlists = append(shortlists, newShortList...)
+	}
+	return shortlists
 }
 
 //Calculates the distances from the contacts to the target contact and returns the contact with the shortest distance
@@ -138,6 +145,22 @@ func findNotContactedNodes(shortlist *ContactCandidates, contactedNodes *Contact
 		}
 	}
 	return ContactCandidates{hasNotBeenContactedList}
+}
+
+func removeInactiveNodes(shortlist ContactCandidates, inactiveNodes ContactCandidates) []Contact {
+	cleanShortlist := make([]Contact, 0)
+	for _, contact := range shortlist.contacts {
+		isActive := true
+		for _, inactiveNode := range inactiveNodes.contacts {
+			if contact.ID == inactiveNode.ID {
+				isActive = false
+			}
+		}
+		if isActive {
+			cleanShortlist = append(cleanShortlist, contact)
+		}
+	}
+	return cleanShortlist
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
