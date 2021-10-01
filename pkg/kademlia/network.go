@@ -58,13 +58,13 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	}
 }
 
-func (network *Network) SendFindContactMessage(contact *Contact, target *Contact, hasNotAnsweredChannel chan Contact) []Contact {
+func (network *Network) SendFindContactMessage(contact *Contact, target *Contact, hasNotAnsweredChannel chan Contact) ([]Contact, bool) {
 	//Establish connection
 	conn, err := net.Dial("tcp", contact.Address)
 	//Send contact to channel to mark as inactive
 	if err != nil {
-		hasNotAnsweredChannel <- *contact
-		return []Contact{}
+		didNotAnswer := true
+		return []Contact{}, didNotAnswer
 	}
 	reader := bufio.NewReader(conn)
 	targetAsString := target.String()
@@ -73,11 +73,12 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	//Wait for showrtlist as answer
 	shortListString, err := reader.ReadString('\n')
 	if err != nil {
-		hasNotAnsweredChannel <- *contact
-		return []Contact{}
+		didNotAnswer := true
+		return []Contact{}, didNotAnswer
 	}
 	shortList := preprocessShortlist(shortListString)
-	return shortList
+	didNotAnswer := false
+	return shortList, didNotAnswer
 }
 
 //When receiving a shortlist it will be a string with the structure that looks like this:
