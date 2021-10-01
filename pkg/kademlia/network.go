@@ -60,10 +60,16 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 
 func (network *Network) SendFindContactMessage(contact *Contact) []Contact {
 	// TODO
+	return []Contact{}
 }
 
-func (network *Network) SendFindDataMessage(hash string) {
-	// TODO
+func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
+	conn, err := net.Dial("tcp", contact.Address)
+	if err != nil {
+		fmt.Printf("Some error %v\n", err)
+	}
+	fmt.Fprintf(conn, "FIND_VALUE;"+ID)
+
 }
 
 func (network *Network) SendStoreMessage(data []byte) {

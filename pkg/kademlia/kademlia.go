@@ -6,7 +6,7 @@ type Kademlia struct {
 	network      *Network
 }
 
-func (kademlia *Kademlia) LookupContact(target *Contact) {
+func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	// TODO
 	//FindClosestContacts() for target
 	//
@@ -62,6 +62,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 			//Stop FIND_NODE_RPC
 		}
 	}
+	return &ContactCandidates{}
 }
 
 //Calculates the distances from the contacts to the target contact and returns the contact with the shortest distance
@@ -88,7 +89,15 @@ func SendFindNodeRPC(contact *Contact, network *Network, channel chan []Contact)
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
-	// TODO
+	hashToKademliaID := NewKademliaID(hash)
+	kademliaToContact := NewContact(hashToKademliaID, "")
+	// Look up contacts
+	shortlist := kademlia.LookupContact(&kademliaToContact)
+
+	//loop through all contact and find value
+	for _, nodeToContact := range shortlist.contacts {
+		kademlia.network.SendFindDataMessage(hash, &nodeToContact)
+	}
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
