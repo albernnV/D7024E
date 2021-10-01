@@ -18,7 +18,7 @@ func NewContact(id *KademliaID, address string) Contact {
 	return Contact{id, address, nil}
 }
 
-// CalcDistance calculates the distance to the target and 
+// CalcDistance calculates the distance to the target and
 // fills the contacts distance field
 func (contact *Contact) CalcDistance(target *KademliaID) {
 	contact.distance = contact.ID.CalcDistance(target)
@@ -66,8 +66,25 @@ func (candidates *ContactCandidates) Swap(i, j int) {
 	candidates.contacts[i], candidates.contacts[j] = candidates.contacts[j], candidates.contacts[i]
 }
 
-// Less returns true if the Contact at index i is smaller than 
+// Less returns true if the Contact at index i is smaller than
 // the Contact at index j
 func (candidates *ContactCandidates) Less(i, j int) bool {
 	return candidates.contacts[i].Less(&candidates.contacts[j])
+}
+
+// Takes the shortlist and removes all the duplicate contacts
+func (candidates *ContactCandidates) RemoveDuplicates() {
+	newContactList := make([]Contact, 0)
+	for _, contact := range candidates.contacts {
+		duplicateExist := false
+		for _, notDuplicateContact := range newContactList {
+			if contact.ID == notDuplicateContact.ID {
+				duplicateExist = true
+			}
+		}
+		if !duplicateExist {
+			newContactList = append(newContactList, contact)
+		}
+	}
+	candidates.contacts = newContactList
 }
