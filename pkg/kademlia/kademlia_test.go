@@ -27,14 +27,19 @@ func TestFindClosestContact(t *testing.T) {
 }
 
 func TestSendFindNodeRPC(t *testing.T) {
-	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
-	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
-	node1 := NewContact(kademliaID1, "")
-	node2 := NewContact(kademliaID2, "")
 	network := Network{}
+
+	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
+	node1 := NewContact(kademliaID1, "")
+
+	kademliaInstance := Kademlia{3, NewRoutingTable(node1), &network}
+
+	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
+	node2 := NewContact(kademliaID2, "")
+
 	shortlistChan := make(chan []Contact)
 	hasNotAnsweredChan := make(chan Contact)
-	go SendFindNodeRPC(&node1, &node2, &network, shortlistChan, hasNotAnsweredChan)
+	go kademliaInstance.SendFindNodeRPC(&node1, &node2, &network, shortlistChan, hasNotAnsweredChan)
 	shortlis := <-shortlistChan
 	if len(shortlis) != 0 {
 		t.Errorf("Returned shortlist is not empty, got %d, want: %d", len(shortlis), 0)

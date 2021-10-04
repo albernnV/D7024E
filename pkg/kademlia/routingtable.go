@@ -2,12 +2,12 @@ package kademlia
 
 const bucketSize = 20
 
-
 // RoutingTable definition
 // keeps a refrence contact of me and an array of buckets
 type RoutingTable struct {
-	me      Contact
-	buckets [IDLength * 8]*bucket
+	me               Contact
+	buckets          [IDLength * 8]*bucket
+	routingTableChan chan Contact
 }
 
 // NewRoutingTable returns a new instance of a RoutingTable
@@ -67,4 +67,12 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 	}
 
 	return IDLength*8 - 1
+}
+
+//This goroutine needs to be started from main so that we can update the routing table whenever we get a message from a node
+func (routingTable *RoutingTable) UpdateRoutingTable() {
+	for {
+		newContact := <-routingTable.routingTableChan
+		routingTable.AddContact(newContact)
+	}
 }
