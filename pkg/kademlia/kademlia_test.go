@@ -1,6 +1,8 @@
 package kademlia
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestFindClosestContact(t *testing.T) {
 	//0000000000000000000000000000000000000002
@@ -27,11 +29,14 @@ func TestFindClosestContact(t *testing.T) {
 func TestSendFindNodeRPC(t *testing.T) {
 	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
 	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
-	node1 := NewContact(kademliaID1, "172.16.0.2:8000")
-	node2 := NewContact(kademliaID2, "172.16.0.3:8000")
+	node1 := NewContact(kademliaID1, "")
+	node2 := NewContact(kademliaID2, "")
 	network := Network{}
 	shortlistChan := make(chan []Contact)
 	hasNotAnsweredChan := make(chan Contact)
 	go SendFindNodeRPC(&node1, &node2, &network, shortlistChan, hasNotAnsweredChan)
-	//TODO: Read from channels
+	shortlis := <-shortlistChan
+	if len(shortlis) != 0 {
+		t.Errorf("Returned shortlist is not empty, got %d, want: %d", len(shortlis), 0)
+	}
 }
