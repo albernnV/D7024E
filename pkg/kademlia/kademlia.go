@@ -89,9 +89,10 @@ func SendFindNodeRPC(contact *Contact, network *Network, channel chan []Contact)
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
+	// Make the hash into a kademliaID to be able to make a new contact
 	hashToKademliaID := NewKademliaID(hash)
 	kademliaToContact := NewContact(hashToKademliaID, "")
-	// Look up contacts
+	// Look up the closests contacts
 	shortlist := kademlia.LookupContact(&kademliaToContact)
 
 	//loop through all contact and find value

@@ -68,10 +68,14 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
-	fmt.Fprintf(conn, "FIND_VALUE;"+ID)
+	fmt.Fprintf(conn, "FIND_VALUE;"+ID+"\n")
+
+	/** A function call to Listen() is needed here but Listen()
+	needs to be redone bc that should be the only function that listens **/
 
 }
 
 func (network *Network) SendStoreMessage(data []byte) {
-	// TODO
+	/** A function call to Listen() is needed here but Listen()
+	needs to be redone bc that should be the only function that listens **/
 }
