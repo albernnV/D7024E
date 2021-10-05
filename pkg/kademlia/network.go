@@ -8,9 +8,12 @@ import (
 )
 
 type Network struct {
+	shortlistCh   chan []Contact //channel where shortlists from the goroutines will be written to
+	inactiveNodes ContactCandidates
+	routingTable  *RoutingTable
 }
 
-func Listen() {
+func (network *Network) Listen() {
 	fmt.Println("Listening.....")
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
@@ -32,6 +35,8 @@ func Listen() {
 			switch messageType {
 			case "FIND_NODE_RPC":
 				//TODO: find closest contacts and return the shortlist
+				//	- preprocess string and get target
+				//	- network.routingTable.FindClosestContacts()
 			case "FIND_VALUE_RPC":
 				//TODO: Lookup and return the value that's sought after
 			case "STORE_VALUE_RPC":
@@ -86,13 +91,13 @@ func sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	}
 }
 
-func (network *Network) SendFindContactMessage(contact *Contact, target *Contact, hasNotAnsweredChannel chan Contact) ([]Contact, bool) {
+func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) {
 	//Establish connection
 	conn, err := net.Dial("tcp", contact.Address)
 	//Send contact to channel to mark as inactive
 	if err != nil {
-		didNotAnswer := true
-		return []Contact{}, didNotAnswer
+		network.shortlistCh <- []Contact{}
+		network.inactiveNodes.Append([]Contact{*contact})
 	}
 	reader := bufio.NewReader(conn)
 	targetAsString := target.String()
@@ -101,12 +106,11 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	//Wait for showrtlist as answer
 	shortListString, err := reader.ReadString('\n')
 	if err != nil {
-		didNotAnswer := true
-		return []Contact{}, didNotAnswer
+		network.shortlistCh <- []Contact{}
+		network.inactiveNodes.Append([]Contact{*contact})
 	}
 	shortList := preprocessShortlist(shortListString)
-	didNotAnswer := false
-	return shortList, didNotAnswer
+	network.shortlistCh <- shortList
 }
 
 //When receiving a shortlist it will be a string with the structure that looks like this:
