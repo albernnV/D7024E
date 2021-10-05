@@ -53,7 +53,9 @@ func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	//Find k closest nodes
 	closestNodes := kademlia.routingTable.FindClosestContacts(target.ID, kademlia.alpha)
 	//Initiate closestNode
-	closestContact := findClosestContact(closestNodes, target)
+	closestNodesToContactCandidates := ContactCandidates{closestNodes}
+	closestNodesToContactCandidates.Sort()
+	closestContact := &closestNodesToContactCandidates.contacts[0]
 	//Initiate shortlist
 	var shortlist ContactCandidates
 	shortlist.contacts = closestNodes
@@ -117,22 +119,6 @@ func manageShortlist(alpha int, shortlist *ContactCandidates, shortlistCh chan [
 		shortlist.contacts = shortlist.GetContacts(bucketSize)
 	}
 
-}
-
-//Calculates the distances from the contacts to the target contact and returns the contact with the shortest distance
-func findClosestContact(contacts []Contact, target *Contact) *Contact {
-	var closestNode *Contact = &contacts[0]
-	for i := 0; i < len(contacts); i++ {
-		contacts[i].CalcDistance(target.ID)
-	}
-	//Compare distances with the closestNode and update it accordingly
-	for j := 0; j < len(contacts); j++ {
-		if contacts[j].distance.Less(closestNode.distance) {
-			closestNode = &contacts[j]
-		}
-	}
-
-	return closestNode
 }
 
 //Returns the contacts in the shortlis that haven't been contacted
