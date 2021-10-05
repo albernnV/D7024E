@@ -128,8 +128,16 @@ func StringToContact(contactAsString string) Contact {
 
 }
 
-func (network *Network) SendFindDataMessage(hash string) {
-	// TODO
+func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
+	conn, err := net.Dial("tcp", contact.Address)
+	if err != nil {
+		fmt.Printf("Some error %v\n", err)
+	}
+	fmt.Fprintf(conn, "FIND_VALUE;"+ID+"\n")
+
+	/** A function call to Listen() is needed here but Listen()
+	needs to be redone bc that should be the only function that listens **/
+
 }
 
 func (network *Network) SendStoreMessage(data []byte, contact *Contact, target Contact) {
@@ -140,4 +148,7 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 
 	dataToString := hex.EncodeToString(data)
 	fmt.Fprintf(conn, "SEND_STORE_RPC;"+dataToString+";"+target.ID.String())
+  
+  	/** A function call to Listen() is needed here but Listen()
+	needs to be redone bc that should be the only function that listens **/
 }
