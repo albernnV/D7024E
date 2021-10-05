@@ -11,29 +11,6 @@ type Kademlia struct {
 }
 
 func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
-	// TODO
-	//FindClosestContacts() for target
-	//
-	//Check which node is closest to target, save in closestNode
-	//
-	//Input all alpha=3 contacts into a shortlist
-	//
-	//SendFindContactMessage() in parallel to the alpha nodes in the shortlist. These chould return k contacts. If anyone fails
-	//to reply they are removed from the shortlist
-	//
-	//The node then fills the shortlist with contacts from the replies received. These are those closest to the target.
-	//
-	//update closestNode
-	//
-	//SendFindContactMessage() in parallel to another alpha nodes from the shortlist. The condition is that they haven't been
-	//contacted already.
-	//
-	//continue until either no node in the returned sets are closer to the closest node seen or the initiating node has
-	//accumulated k probed and known to be active contacts.
-	//
-	//If a cycle doesn't find a node that is closer than the already closest node the node will send a RPC each of
-	//the k closest nodes that it has not already queried
-
 	//Find k closest nodes
 	closestNodes := kademlia.network.routingTable.FindClosestContacts(target.ID, kademlia.alpha)
 	//Initiate closestNode
