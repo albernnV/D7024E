@@ -207,8 +207,9 @@ func (kademlia *Kademlia) Store(data []byte) {
 func HashingData(data []byte) *KademliaID {
 	//hash the data
 	stringToBytes := sha1.New()
-	stringToBytes.Write(data)
+	stringToBytes.Write([]byte(data))
 	hashedData := stringToBytes.Sum(nil)
+
 	// Encodes the hash back to string to make it a new kademlia ID
 	hashedStringData := hex.EncodeToString(hashedData)
 	hashedKademliaID := NewKademliaID(hashedStringData)

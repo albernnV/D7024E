@@ -22,7 +22,7 @@ func TestFindClosestContact(t *testing.T) {
 
 	closestContact := findClosestContact(contacts, &node1)
 	if closestContact.ID != node3.ID {
-		t.Errorf("Contact ID was incorrect, got %s, want: %s", closestContact.ID.String(), node3.ID.String())
+		t.Errorf("Contact ID was incorrect, got: %s, want: %s", closestContact.ID.String(), node3.ID.String())
 	}
 }
 
@@ -42,6 +42,21 @@ func TestSendFindNodeRPC(t *testing.T) {
 	go kademliaInstance.SendFindNodeRPC(&node1, &node2, &network, shortlistChan, hasNotAnsweredChan)
 	shortlis := <-shortlistChan
 	if len(shortlis) != 0 {
-		t.Errorf("Returned shortlist is not empty, got %d, want: %d", len(shortlis), 0)
+		t.Errorf("Returned shortlist is not empty, got: %d, want: %d", len(shortlis), 0)
 	}
+
+}
+
+func TestHashingData(t *testing.T) {
+
+	s := []byte("Hejsan vad gör du?")
+
+	hashedData := HashingData(s)
+
+	sha1Hash := "c85373d0e75022b70dc94c99db4094ae80ab98d7"
+
+	if hashedData.String() != sha1Hash {
+		t.Errorf("The hashed data is not correct, got: %s, want: %s", hashedData.String(), sha1Hash)
+	}
+
 }
