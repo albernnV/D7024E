@@ -24,12 +24,39 @@ func Listen() {
 	}
 	for {
 		_, remoteaddr, err := ser.ReadFromUDP(p)
-		fmt.Printf("Message receive from %v %s \n", remoteaddr, p)
+		if err != nil {
+			fmt.Println("Error reading from UDP stream")
+		} else {
+			incomingMessage := hex.EncodeToString(p)
+			messageType := getTypeFromMessage(incomingMessage)
+			switch messageType {
+			case "FIND_NODE_RPC":
+				//TODO: find closest contacts and return the shortlist
+			case "FIND_VALUE_RPC":
+				//TODO: Lookup and return the value that's sought after
+			case "STORE_VALUE_RPC":
+				//TODO: Store value somewhere
+			case "SHORTLIST":
+				//TODO: Append shortlist to old shortlist
+			case "PING":
+				go sendPongResponse(ser, remoteaddr)
+			case "PONG":
+				//TODO: Update k-buckets
+			}
+		}
+		/*fmt.Printf("Message receive from %v %s \n", remoteaddr, p)
 		if err != nil {
 			fmt.Printf("Some error  %v", err)
 			continue
 		}
-		go sendResponse(ser, remoteaddr)
+		go sendResponse(ser, remoteaddr)*/
+		//TODO: Check what the response is and send to a different channel depending on response
+		//Things to check:
+		//	- Shortlist
+		//	- Value from a STORE_RPC
+		//	- Ping message
+		//	- FIND_NODE_RPC from another node
+		//	- FIND_VALUE from another node
 	}
 
 }
@@ -52,13 +79,12 @@ func (network *Network) SendPingMessage() {
 
 }
 
-func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
-	_, err := conn.WriteToUDP([]byte("POONG "), addr)
+func sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
+	_, err := conn.WriteToUDP([]byte("PONG "), addr)
 	if err != nil {
 		fmt.Printf("Couldn't send response %v", err)
 	}
 }
-
 
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact, hasNotAnsweredChannel chan Contact) ([]Contact, bool) {
 	//Establish connection
@@ -133,7 +159,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
-	fmt.Fprintf(conn, "FIND_VALUE;"+ID+"\n")
+	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+"\n")
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
@@ -147,8 +173,20 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 	}
 
 	dataToString := hex.EncodeToString(data)
-	fmt.Fprintf(conn, "SEND_STORE_RPC;"+dataToString+";"+target.ID.String())
-  
-  	/** A function call to Listen() is needed here but Listen()
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+target.ID.String())
+
+	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
+}
+
+func getTypeFromMessage(message string) string {
+	var messageType string
+	for _, letter := range message {
+		if string(letter) == ";" {
+			break
+		} else {
+			messageType = messageType + string(letter)
+		}
+	}
+	return messageType
 }
