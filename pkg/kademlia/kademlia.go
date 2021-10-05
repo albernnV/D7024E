@@ -1,5 +1,10 @@
 package kademlia
 
+import (
+	"crypto/sha1"
+	"encoding/hex"
+)
+
 type Kademlia struct {
 	alpha        int
 	routingTable *RoutingTable
@@ -38,31 +43,62 @@ func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	var shortlist ContactCandidates
 	shortlist.contacts = closestNodes
 	//Initiate channel where shortlists from the goroutines will be written to
-	ch := make(chan []Contact)
+	shortlistCh := make(chan []Contact)
+	//Channel for writing inactive nodes to
+	hasNotAnsweredCh := make(chan Contact)
+
+	hasBeenContactedList := ContactCandidates{}
+	hasNotAnsweredList := ContactCandidates{}
+
 	closerNodeHasBeenFound := true
+	go manageInactiveNodes(hasNotAnsweredCh, &hasNotAnsweredList)
 	for closerNodeHasBeenFound {
 		//Send find node RPC to alpha number of contacts in the shortlist
 		for i := 0; i < kademlia.alpha; i++ {
-			go SendFindNodeRPC(&shortlist.contacts[i], kademlia.network, ch)
+			go SendFindNodeRPC(&shortlist.contacts[i], target, kademlia.network, shortlistCh, hasNotAnsweredCh)
 		}
-
-		//Retrieve all shortlists from the contacted nodes
-		subShortlist1, subShortlist2, subShortlist3 := <-ch, <-ch, <-ch
-		s := append(subShortlist1, subShortlist2...)
-		newShortList := ContactCandidates{append(s, subShortlist3...)}
-		//Sort the new shortlist and remove any duplicates
-		newShortList.Sort()
-		// TODO: Remove dublicates
-		shortlist = newShortList
+		manageShortlist(kademlia.alpha, &shortlist, shortlistCh)
+		//Check end condition
 		if shortlist.contacts[0].Less(closestContact) {
 			closestContact = &shortlist.contacts[0]
 		} else {
 			closerNodeHasBeenFound = false
-			//Send a RPC to each of the k closest nodes that has not already been queried
-			//Stop FIND_NODE_RPC
+			//Find closest nodes that have not yet been contacted
+			nodesToContact := findNotContactedNodes(&shortlist, &hasBeenContactedList)
+			nodesToContact.Sort()
+			nodesToContact.RemoveDuplicates()
+			//Send a RPC to each of the k closest nodes that has not already been contacted
+			for _, nodeToContact := range nodesToContact.GetContacts(bucketSize) {
+				go SendFindNodeRPC(&nodeToContact, target, kademlia.network, shortlistCh, hasNotAnsweredCh)
+			}
+			manageShortlist(kademlia.alpha, &shortlist, shortlistCh)
+			//Remove all inactive nodes from the shortlist
+			shortlist.contacts = removeInactiveNodes(shortlist, hasNotAnsweredList)
 		}
 	}
-	return &ContactCandidates{}
+
+	return &shortlist
+}
+
+//Sends a find node RPC to the contact which will send back the k closest nodes. These contacts will be written to the
+//channel to be retireved
+func SendFindNodeRPC(contact *Contact, target *Contact, network *Network, shortlistChannel chan []Contact, hasNotAnsweredChannel chan Contact) {
+	closestNodes, didNotAnswer := network.SendFindContactMessage(contact, target, hasNotAnsweredChannel)
+	shortlistChannel <- closestNodes
+	if didNotAnswer {
+		hasNotAnsweredChannel <- *contact
+	}
+}
+
+func manageShortlist(alpha int, shortlist *ContactCandidates, shortlistCh chan []Contact) {
+	for i := 0; i < alpha; i++ {
+		newShortList := <-shortlistCh
+		shortlist.Append(newShortList)
+		shortlist.Sort()
+		shortlist.RemoveDuplicates()
+		shortlist.contacts = shortlist.GetContacts(bucketSize)
+	}
+
 }
 
 //Calculates the distances from the contacts to the target contact and returns the contact with the shortest distance
@@ -81,11 +117,43 @@ func findClosestContact(contacts []Contact, target *Contact) *Contact {
 	return closestNode
 }
 
-//Sends a find node RPC to the contact which will send back the k closest nodes. These contacts will be written to the
-//channel to be retireved
-func SendFindNodeRPC(contact *Contact, network *Network, channel chan []Contact) {
-	closestNodes := network.SendFindContactMessage(contact)
-	channel <- closestNodes
+func findNotContactedNodes(shortlist *ContactCandidates, contactedNodes *ContactCandidates) ContactCandidates {
+	hasNotBeenContactedList := make([]Contact, 0)
+	for _, contact := range shortlist.contacts {
+		hasNotBeenContacted := true
+		for _, contactedNode := range contactedNodes.contacts {
+			if contact.ID == contactedNode.ID {
+				hasNotBeenContacted = false
+			}
+		}
+		if hasNotBeenContacted {
+			hasNotBeenContactedList = append(hasNotBeenContactedList, contact)
+		}
+	}
+	return ContactCandidates{hasNotBeenContactedList}
+}
+
+func manageInactiveNodes(hasNotAnsweredCh chan Contact, hasNotAnsweredList *ContactCandidates) {
+	for {
+		inactiveNode := <-hasNotAnsweredCh
+		hasNotAnsweredList.Append([]Contact{inactiveNode})
+	}
+}
+
+func removeInactiveNodes(shortlist ContactCandidates, inactiveNodes ContactCandidates) []Contact {
+	cleanShortlist := make([]Contact, 0)
+	for _, contact := range shortlist.contacts {
+		isActive := true
+		for _, inactiveNode := range inactiveNodes.contacts {
+			if contact.ID == inactiveNode.ID {
+				isActive = false
+			}
+		}
+		if isActive {
+			cleanShortlist = append(cleanShortlist, contact)
+		}
+	}
+	return cleanShortlist
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
@@ -102,5 +170,28 @@ func (kademlia *Kademlia) LookupData(hash string) {
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
-	// TODO
+	//Hash the data to get a newKademliaID
+	fileKademliaID := HashingData(data)
+	newContact := NewContact(fileKademliaID, "")
+
+	// Find closest contacts for the key
+	closestsNodes := kademlia.LookupContact(&newContact)
+
+	//SendStore RPCs
+	for _, nodeToStoreAt := range closestsNodes.contacts {
+		go kademlia.network.SendStoreMessage(data, &nodeToStoreAt, newContact)
+	}
+
+}
+
+func HashingData(data []byte) *KademliaID {
+	//hash the data
+	stringToBytes := sha1.New()
+	stringToBytes.Write(data)
+	hashedData := stringToBytes.Sum(nil)
+	// Encodes the hash back to string to make it a new kademlia ID
+	hashedStringData := hex.EncodeToString(hashedData)
+	hashedKademliaID := NewKademliaID(hashedStringData)
+
+	return hashedKademliaID
 }
