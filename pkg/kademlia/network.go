@@ -59,7 +59,6 @@ func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	}
 }
 
-
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact, hasNotAnsweredChannel chan Contact) ([]Contact, bool) {
 	//Establish connection
 	conn, err := net.Dial("tcp", contact.Address)

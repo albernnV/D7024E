@@ -72,7 +72,10 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 //This goroutine needs to be started from main so that we can update the routing table whenever we get a message from a node
 func (routingTable *RoutingTable) UpdateRoutingTable() {
 	for {
-		newContact := <-routingTable.routingTableChan
+		newContact, done := <-routingTable.routingTableChan
+		if done { //Quits goroutine if channel is closed
+			return
+		}
 		routingTable.AddContact(newContact)
 	}
 }
