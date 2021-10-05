@@ -32,10 +32,9 @@ func TestSendFindNodeRPC(t *testing.T) {
 	node1 := NewContact(kademliaID1, "")
 	node2 := NewContact(kademliaID2, "")
 	network := Network{}
-	shortlistChan := make(chan []Contact)
-	hasNotAnsweredChan := make(chan Contact)
-	go SendFindNodeRPC(&node1, &node2, &network, shortlistChan, hasNotAnsweredChan)
-	shortlis := <-shortlistChan
+	go network.Listen()
+	go network.SendFindContactMessage(&node1, &node2)
+	shortlis := <-network.shortlistCh
 	if len(shortlis) != 0 {
 		t.Errorf("Returned shortlist is not empty, got %d, want: %d", len(shortlis), 0)
 	}
