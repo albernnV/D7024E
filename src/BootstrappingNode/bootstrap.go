@@ -6,9 +6,9 @@ import (
 )
 
 func main() {
-	go cli.Cli()
-	net := &kademlia.Network{}
-	for {
-		kademlia.Listen()
-	}
+	alpha := 3
+	contact := &kademlia.Contact{}
+	node := kademlia.NewKademliaInstance(alpha, *contact)
+	go cli.Cli(node)
+	node.Start()
 }
