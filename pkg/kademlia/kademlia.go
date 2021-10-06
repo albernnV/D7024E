@@ -10,11 +10,28 @@ type Kademlia struct {
 	network *Network
 }
 
+func (kademlia *Kademlia) Start() {
+	go kademlia.routingTable.UpdateRoutingTable()
+}
+
+func (kademlia *Kademlia) Stop() {
+	close(kademlia.routingTable.routingTableChan)
+}
+
+func NewKademliaInstance(alpha int, me Contact) *Kademlia {
+	routingTable := NewRoutingTable(me)
+	network := &Network{}
+	newKademliaInstance := &Kademlia{alpha, routingTable, network}
+	return newKademliaInstance
+}
+
 func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	//Find k closest nodes
 	closestNodes := kademlia.network.routingTable.FindClosestContacts(target.ID, kademlia.alpha)
 	//Initiate closestNode
-	closestContact := findClosestContact(closestNodes, target)
+	closestNodesToContactCandidates := ContactCandidates{closestNodes}
+	closestNodesToContactCandidates.Sort()
+	closestContact := &closestNodesToContactCandidates.contacts[0]
 	//Initiate shortlist
 	var shortlist ContactCandidates
 	shortlist.contacts = closestNodes
@@ -61,22 +78,7 @@ func (kademlia *Kademlia) manageShortlist(alpha int, shortlist *ContactCandidate
 
 }
 
-//Calculates the distances from the contacts to the target contact and returns the contact with the shortest distance
-func findClosestContact(contacts []Contact, target *Contact) *Contact {
-	var closestNode *Contact = &contacts[0]
-	for i := 0; i < len(contacts); i++ {
-		contacts[i].CalcDistance(target.ID)
-	}
-	//Compare distances with the closestNode and update it accordingly
-	for j := 0; j < len(contacts); j++ {
-		if contacts[j].distance.Less(closestNode.distance) {
-			closestNode = &contacts[j]
-		}
-	}
-
-	return closestNode
-}
-
+//Returns the contacts in the shortlis that haven't been contacted
 func findNotContactedNodes(shortlist *ContactCandidates, contactedNodes *ContactCandidates) ContactCandidates {
 	hasNotBeenContactedList := make([]Contact, 0)
 	for _, contact := range shortlist.contacts {
@@ -140,8 +142,9 @@ func (kademlia *Kademlia) Store(data []byte) {
 func HashingData(data []byte) *KademliaID {
 	//hash the data
 	stringToBytes := sha1.New()
-	stringToBytes.Write(data)
+	stringToBytes.Write([]byte(data))
 	hashedData := stringToBytes.Sum(nil)
+
 	// Encodes the hash back to string to make it a new kademlia ID
 	hashedStringData := hex.EncodeToString(hashedData)
 	hashedKademliaID := NewKademliaID(hashedStringData)
