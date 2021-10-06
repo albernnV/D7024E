@@ -37,6 +37,15 @@ func (network *Network) Listen() {
 				//TODO: find closest contacts and return the shortlist
 				//	- preprocess string and get target
 				//	- network.routingTable.FindClosestContacts()
+				//	- write to shortlist channel
+				//	- Update buckets
+				targetContactAsString := incomingMessage[len(messageType)+1 : len(incomingMessage)-1]
+				targetContact := StringToContact(targetContactAsString)
+				closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
+				recipientID := NewKademliaID(incomingMessage[len(messageType)+1+len(targetContactAsString)+1:])
+				recipient := NewContact(recipientID, remoteaddr.String())
+				shortlistAsString := shortlistToString(&closestContacts)
+				fmt.Fprintf(ser, shortlistAsString)
 			case "FIND_VALUE_RPC":
 				//TODO: Lookup and return the value that's sought after
 			case "STORE_VALUE_RPC":
@@ -102,7 +111,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	reader := bufio.NewReader(conn)
 	targetAsString := target.String()
 	//Send find node rpc together with the target contact
-	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+"\n")
+	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+";"+network.routingTable.me.ID.String()+"\n")
 	//Wait for showrtlist as answer
 	shortListString, err := reader.ReadString('\n')
 	if err != nil {
@@ -129,6 +138,16 @@ func preprocessShortlist(shortlistString string) []Contact {
 		}
 	}
 	return shortlist
+}
+
+func shortlistToString(shortlist *[]Contact) string {
+	var shortlistString string
+	for _, contact := range *shortlist {
+		contactString := contact.String()
+		shortlistString = shortlistString + contactString + ";"
+	}
+	shortlistString = shortlistString[:len(shortlistString)-1] //remove last semicolon
+	return shortlistString
 }
 
 //Takes as input a string structured as "contact(ID, IP) and converts it into a Contact"
@@ -181,6 +200,11 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
+}
+
+func (network *Network) sendShortlist(recipient *Contact, shortlist *[]Contact) {
+	shortlistAsString := shortlistToString(shortlist)
+
 }
 
 func getTypeFromMessage(message string) string {
