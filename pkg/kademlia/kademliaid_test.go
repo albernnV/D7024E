@@ -40,3 +40,26 @@ func TestCalcDistance(t *testing.T) {
 		t.Errorf("This does not calculate the distance between 2 KademliaIDs, got: %v, want: %v", *newKademliaID, *ID1xorID2)
 	}
 }
+
+func TestEquals(t *testing.T) {
+	newKademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
+	testKademliaID := NewKademliaID("0000000000000000000000000000000000000001")
+
+	newKademliaID := newKademliaID1.Equals(testKademliaID)
+
+	if newKademliaID != true {
+		t.Errorf("This is not equals the testKademliaID, got %v, want: %v", newKademliaID, testKademliaID)
+	}
+}
+
+func TestLess(t *testing.T) {
+
+	kademliaID := NewKademliaID("0000000000000000000000000000000000000001")
+	otherKademliaID := NewKademliaID("0000000000000000000000000000000000000002")
+
+	newKademliaID := kademliaID.Less(otherKademliaID)
+
+	if newKademliaID != true {
+		t.Errorf("This is not less than the otherKademlia ID, got: ,%v, want: %v", newKademliaID, otherKademliaID)
+	}
+}
