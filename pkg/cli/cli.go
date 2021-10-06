@@ -12,7 +12,7 @@ import ("fmt"
 // "PING" - for displaying and testing the ping command
 // "lookup ID"
 
-func Cli(net *Network) {
+func Cli(kademliaNode *Kademlia) {
 	for {
 		var input string
 		fmt.Printf("Command: \n")

@@ -11,4 +11,3 @@ func main() {
 	//kademlia.Listen("", 8000)
 	go net.Listen()
 }
-

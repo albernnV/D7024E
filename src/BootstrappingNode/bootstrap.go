@@ -7,6 +7,8 @@ import (
 
 func main() {
 	net := &kademlia.Network{}
+	routingTable := &kademlia.RoutingTable{}
+	
 	go cli.Cli(net)
 	go net.Listen()
 }
