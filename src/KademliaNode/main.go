@@ -6,8 +6,10 @@ import (
 )
 
 func main() {
-	net := &kademlia.Network{}
-	go cli.Cli(net)
-	//kademlia.Listen("", 8000)
-	go net.Listen()
+	// id??? vart genereras och läggs in?
+	alpha := 3
+	contact := &kademlia.Contact{}
+	node := kademlia.NewKademliaInstance(alpha, *contact)
+	go cli.Cli(node)
+	node.Start()
 }

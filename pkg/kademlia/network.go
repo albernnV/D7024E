@@ -11,12 +11,6 @@ type Network struct {
 }
 
 func Listen() {
-	for { 
-		ListenProcedure()
-	}
-}
-
-func ListenProcedure() {
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 8000,
@@ -152,7 +146,7 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 
 	dataToString := hex.EncodeToString(data)
 	fmt.Fprintf(conn, "SEND_STORE_RPC;"+dataToString+";"+target.ID.String())
-  
-  	/** A function call to Listen() is needed here but Listen()
+
+	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
 }
