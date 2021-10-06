@@ -34,18 +34,15 @@ func (network *Network) Listen() {
 			messageType := getTypeFromMessage(incomingMessage)
 			switch messageType {
 			case "FIND_NODE_RPC":
-				//TODO: find closest contacts and return the shortlist
-				//	- preprocess string and get target
-				//	- network.routingTable.FindClosestContacts()
-				//	- write to shortlist channel
-				//	- Update buckets
 				targetContactAsString := incomingMessage[len(messageType)+1 : len(incomingMessage)-1]
 				targetContact := StringToContact(targetContactAsString)
 				closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
-				recipientID := NewKademliaID(incomingMessage[len(messageType)+1+len(targetContactAsString)+1:])
-				recipient := NewContact(recipientID, remoteaddr.String())
+				senderID := NewKademliaID(incomingMessage[len(messageType)+1+len(targetContactAsString)+1:])
+				sender := NewContact(senderID, remoteaddr.String())
 				shortlistAsString := shortlistToString(&closestContacts)
+				//Send shortlist to sender
 				fmt.Fprintf(ser, shortlistAsString)
+				network.routingTable.routingTableChan <- sender
 			case "FIND_VALUE_RPC":
 				//TODO: Lookup and return the value that's sought after
 			case "STORE_VALUE_RPC":
