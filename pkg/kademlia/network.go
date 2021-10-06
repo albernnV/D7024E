@@ -11,7 +11,12 @@ type Network struct {
 }
 
 func Listen() {
-	fmt.Println("Listening.....")
+	for { 
+		ListenProcedure()
+	}
+}
+
+func ListenProcedure() {
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 8000,

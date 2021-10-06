@@ -6,9 +6,7 @@ import (
 )
 
 func main() {
-	go cli.Cli()
 	net := &kademlia.Network{}
-	for {
-		kademlia.Listen()
-	}
+	go cli.Cli(net)
+	go net.Listen()
 }

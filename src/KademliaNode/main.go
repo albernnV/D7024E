@@ -6,8 +6,9 @@ import (
 )
 
 func main() {
-	go cli.Cli()
 	net := &kademlia.Network{}
+	go cli.Cli(net)
 	//kademlia.Listen("", 8000)
-	net.SendPingMessage()
+	go net.Listen()
 }
+
