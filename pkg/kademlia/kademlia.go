@@ -12,6 +12,7 @@ type Kademlia struct {
 
 func (kademlia *Kademlia) Start() {
 	go kademlia.network.routingTable.UpdateRoutingTable()
+	go kademlia.network.Listen()
 }
 
 func (kademlia *Kademlia) Stop() {
@@ -149,4 +150,8 @@ func HashingData(data []byte) *KademliaID {
 	hashedKademliaID := NewKademliaID(hashedStringData)
 
 	return hashedKademliaID
+}
+
+func (kademlia *Kademlia) SendPing() {
+	kademlia.network.SendPingMessage()
 }
