@@ -11,13 +11,15 @@ type Network struct {
 	shortlistCh   chan []Contact //channel where shortlists from the goroutines will be written to
 	inactiveNodes ContactCandidates
 	routingTable  *RoutingTable
+	storedFiles   map[KademliaID]string
 }
 
 func NewNetwork(me Contact) *Network {
 	shortlistCh := make(chan []Contact)
 	inactiveNodes := ContactCandidates{[]Contact{}}
 	routingTable := NewRoutingTable(me)
-	return &Network{shortlistCh, inactiveNodes, routingTable}
+	storedFiles := make(map[KademliaID]string)
+	return &Network{shortlistCh, inactiveNodes, routingTable, storedFiles}
 }
 
 func (network *Network) Listen() {
@@ -48,22 +50,25 @@ func (network *Network) Listen() {
 				closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
 				shortlistAsString := shortlistToString(&closestContacts)
 				//Send shortlist to sender
-				conn.WriteToUDP([]byte(shortlistAsString), remoteaddr)
+				conn.WriteToUDP([]byte("SHORTLIST;"+shortlistAsString)+";", remoteaddr) //TODO: fix so that the ID is added to the message
 				go network.routingTable.AddContact(sender)
 			case "FIND_VALUE_RPC":
 				//TODO: Lookup and return the value that's sought after
+
 			case "STORE_VALUE_RPC":
-				//TODO: Store value somewhere
+				//TODO: get target id from hashing the data. We shouldn't add the sender id as key but instead target id
+				network.storedFiles[*senderID] = data
+				go network.routingTable.AddContact(sender)
 			case "SHORTLIST":
-				//TODO: Append shortlist to old shortlist
+				// Append shortlist to old shortlist
 				shortlistAsString := data
-				shortlist := preprocessShortlist(shortlistAsString)
-				network.shortlistCh <- shortlist
+				newShortlist := preprocessShortlist(shortlistAsString)
+				go network.addToShortlist(newShortlist)
 			case "PING":
 				go network.routingTable.AddContact(sender)
 				sendPongResponse(conn, remoteaddr)
 			case "PONG":
-				//TODO: Update k-buckets
+				go network.routingTable.AddContact(sender)
 			}
 		}
 	}
@@ -168,6 +173,10 @@ func shortlistToString(shortlist *[]Contact) string {
 	return shortlistString
 }
 
+func (network *Network) addToShortlist(shortlist []Contact) {
+	network.shortlistCh <- shortlist
+}
+
 //Takes as input a string structured as "contact(ID, IP) and converts it into a Contact"
 func StringToContact(contactAsString string) Contact {
 	var address string
@@ -214,7 +223,7 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 	}
 
 	dataToString := hex.EncodeToString(data)
-	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+target.ID.String())
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+target.ID.String()) //TODO: Change so that it's sender id instead of target id since the target id can be hashed from the data
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
