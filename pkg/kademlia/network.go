@@ -11,15 +11,15 @@ type Network struct {
 	shortlistCh   chan []Contact //channel where shortlists from the goroutines will be written to
 	inactiveNodes ContactCandidates
 	routingTable  *RoutingTable
-	storedFiles   map[KademliaID]string
+	storedValues  map[KademliaID]string
 }
 
 func NewNetwork(me Contact) *Network {
 	shortlistCh := make(chan []Contact)
 	inactiveNodes := ContactCandidates{[]Contact{}}
 	routingTable := NewRoutingTable(me)
-	storedFiles := make(map[KademliaID]string)
-	return &Network{shortlistCh, inactiveNodes, routingTable, storedFiles}
+	storedValues := make(map[KademliaID]string)
+	return &Network{shortlistCh, inactiveNodes, routingTable, storedValues}
 }
 
 func (network *Network) Listen() {
@@ -50,17 +50,22 @@ func (network *Network) Listen() {
 				closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
 				shortlistAsString := shortlistToString(&closestContacts)
 				//Send shortlist to sender
-				conn.WriteToUDP([]byte("SHORTLIST;"+shortlistAsString)+";", remoteaddr) //TODO: fix so that the ID is added to the message
+				conn.WriteToUDP([]byte("SHORTLIST;"+shortlistAsString+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
+				// Update buckets
 				go network.routingTable.AddContact(sender)
-			case "FIND_VALUE_RPC":
-				//TODO: Lookup and return the value that's sought after
-
+			case "FIND_VALUE_RPC": //Lookup and return the value that's sought after
+				IDAsString := data
+				valueID := NewKademliaID(IDAsString)
+				value := network.storedValues[*valueID]
+				//Send value to sender
+				conn.WriteToUDP([]byte("VALUE;"+value+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
+				// Update buckets
+				go network.routingTable.AddContact(sender)
 			case "STORE_VALUE_RPC":
-				//TODO: get target id from hashing the data. We shouldn't add the sender id as key but instead target id
-				network.storedFiles[*senderID] = data
+				valueID := HashingData([]byte(data))
+				network.storedValues[*valueID] = data
 				go network.routingTable.AddContact(sender)
 			case "SHORTLIST":
-				// Append shortlist to old shortlist
 				shortlistAsString := data
 				newShortlist := preprocessShortlist(shortlistAsString)
 				go network.addToShortlist(newShortlist)
@@ -209,7 +214,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
-	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+"\n")
+	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+";"+network.routingTable.me.ID.String()+"\n")
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
@@ -223,7 +228,7 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 	}
 
 	dataToString := hex.EncodeToString(data)
-	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+target.ID.String()) //TODO: Change so that it's sender id instead of target id since the target id can be hashed from the data
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+network.routingTable.me.ID.String()) //TODO: Change so that it's sender id instead of target id since the target id can be hashed from the data
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
