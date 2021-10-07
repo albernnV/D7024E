@@ -5,24 +5,19 @@ import (
 )
 
 func TestSendFindNodeRPC(t *testing.T) {
-	network := Network{}
-
 	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
 	node1 := NewContact(kademliaID1, "")
 
-	kademliaInstance := Kademlia{3, NewRoutingTable(node1), &network}
+	kademliaInstance := NewKademliaInstance(3, node1)
 
 	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
 	node2 := NewContact(kademliaID2, "")
-
-	shortlistChan := make(chan []Contact)
-	hasNotAnsweredChan := make(chan Contact)
-	go kademliaInstance.SendFindNodeRPC(&node1, &node2, &network, shortlistChan, hasNotAnsweredChan)
-	shortlis := <-shortlistChan
+	go kademliaInstance.network.Listen()
+	go kademliaInstance.network.SendFindContactMessage(&node1, &node2)
+	shortlis := <-kademliaInstance.network.shortlistCh
 	if len(shortlis) != 0 {
 		t.Errorf("Returned shortlist is not empty, got: %d, want: %d", len(shortlis), 0)
 	}
-
 }
 
 func TestHashingData(t *testing.T) {

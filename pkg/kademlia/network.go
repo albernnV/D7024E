@@ -8,27 +8,64 @@ import (
 )
 
 type Network struct {
+	shortlistCh   chan []Contact //channel where shortlists from the goroutines will be written to
+	inactiveNodes ContactCandidates
+	routingTable  *RoutingTable
 }
 
-func Listen() {
+func NewNetwork(me Contact) *Network {
+	shortlistCh := make(chan []Contact)
+	inactiveNodes := ContactCandidates{[]Contact{}}
+	routingTable := NewRoutingTable(me)
+	return &Network{shortlistCh, inactiveNodes, routingTable}
+}
+
+func (network *Network) Listen() {
+	fmt.Println("Listening.....")
 	p := make([]byte, 2048)
 	addr := net.UDPAddr{
 		Port: 8000,
 		IP:   net.ParseIP(""),
 	}
-	ser, err := net.ListenUDP("udp", &addr)
+	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 		return
 	}
 	for {
-		_, remoteaddr, err := ser.ReadFromUDP(p)
-		fmt.Printf("Message receive from %v %s \n", remoteaddr, p)
+		_, remoteaddr, err := conn.ReadFromUDP(p)
 		if err != nil {
-			fmt.Printf("Some error  %v", err)
-			continue
+			fmt.Println("Error reading from UDP stream")
+		} else {
+			incomingMessage := hex.EncodeToString(p)
+			messageType, data, senderIDAsString := preprocessIncomingMessage(incomingMessage)
+			senderID := NewKademliaID(senderIDAsString)
+			sender := NewContact(senderID, remoteaddr.String())
+			switch messageType {
+			case "FIND_NODE_RPC":
+				targetContactAsString := data
+				targetContact := StringToContact(targetContactAsString)
+				closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
+				shortlistAsString := shortlistToString(&closestContacts)
+				//Send shortlist to sender
+				conn.WriteToUDP([]byte(shortlistAsString), remoteaddr)
+				go network.routingTable.AddContact(sender)
+			case "FIND_VALUE_RPC":
+				//TODO: Lookup and return the value that's sought after
+			case "STORE_VALUE_RPC":
+				//TODO: Store value somewhere
+			case "SHORTLIST":
+				//TODO: Append shortlist to old shortlist
+				shortlistAsString := data
+				shortlist := preprocessShortlist(shortlistAsString)
+				network.shortlistCh <- shortlist
+			case "PING":
+				go network.routingTable.AddContact(sender)
+				sendPongResponse(conn, remoteaddr)
+			case "PONG":
+				//TODO: Update k-buckets
+			}
 		}
-		go sendResponse(ser, remoteaddr)
 	}
 
 }
@@ -51,34 +88,56 @@ func (network *Network) SendPingMessage() {
 
 }
 
-func sendResponse(conn *net.UDPConn, addr *net.UDPAddr) {
-	_, err := conn.WriteToUDP([]byte("POONG "), addr)
+func sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
+	_, err := conn.WriteToUDP([]byte("PONG "), addr)
 	if err != nil {
 		fmt.Printf("Couldn't send response %v", err)
 	}
 }
 
-func (network *Network) SendFindContactMessage(contact *Contact, target *Contact, hasNotAnsweredChannel chan Contact) ([]Contact, bool) {
+func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) {
 	//Establish connection
 	conn, err := net.Dial("tcp", contact.Address)
 	//Send contact to channel to mark as inactive
 	if err != nil {
-		didNotAnswer := true
-		return []Contact{}, didNotAnswer
+		network.shortlistCh <- []Contact{}
+		network.inactiveNodes.Append([]Contact{*contact})
 	}
 	reader := bufio.NewReader(conn)
 	targetAsString := target.String()
 	//Send find node rpc together with the target contact
-	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+"\n")
+	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+";"+network.routingTable.me.ID.String()+"\n")
 	//Wait for showrtlist as answer
 	shortListString, err := reader.ReadString('\n')
 	if err != nil {
-		didNotAnswer := true
-		return []Contact{}, didNotAnswer
+		network.shortlistCh <- []Contact{}
+		network.inactiveNodes.Append([]Contact{*contact})
 	}
 	shortList := preprocessShortlist(shortListString)
-	didNotAnswer := false
-	return shortList, didNotAnswer
+	network.shortlistCh <- shortList
+}
+
+func preprocessIncomingMessage(message string) (string, string, string) {
+	var messageType string
+	var data string
+	var senderID string
+	m := message[:len(message)-1] //Remove \n character at end
+	numberOfEncounteredSemicolon := 0
+	for _, letter := range m {
+		if string(letter) == ";" {
+			numberOfEncounteredSemicolon += 1
+			continue
+		}
+
+		if numberOfEncounteredSemicolon == 0 {
+			messageType = messageType + string(letter)
+		} else if numberOfEncounteredSemicolon == 1 {
+			data = data + string(letter)
+		} else {
+			senderID = senderID + string(letter)
+		}
+	}
+	return messageType, data, senderID
 }
 
 //When receiving a shortlist it will be a string with the structure that looks like this:
@@ -97,6 +156,16 @@ func preprocessShortlist(shortlistString string) []Contact {
 		}
 	}
 	return shortlist
+}
+
+func shortlistToString(shortlist *[]Contact) string {
+	var shortlistString string
+	for _, contact := range *shortlist {
+		contactString := contact.String()
+		shortlistString = shortlistString + contactString + ";"
+	}
+	shortlistString = shortlistString[:len(shortlistString)-1] //remove last semicolon
+	return shortlistString
 }
 
 //Takes as input a string structured as "contact(ID, IP) and converts it into a Contact"
@@ -131,7 +200,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
-	fmt.Fprintf(conn, "FIND_VALUE;"+ID+"\n")
+	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+"\n")
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
@@ -145,7 +214,7 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 	}
 
 	dataToString := hex.EncodeToString(data)
-	fmt.Fprintf(conn, "SEND_STORE_RPC;"+dataToString+";"+target.ID.String())
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+target.ID.String())
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
