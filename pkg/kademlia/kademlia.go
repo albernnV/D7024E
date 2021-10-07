@@ -11,17 +11,16 @@ type Kademlia struct {
 }
 
 func (kademlia *Kademlia) Start() {
-	go kademlia.routingTable.UpdateRoutingTable()
+	go kademlia.network.routingTable.UpdateRoutingTable()
 }
 
 func (kademlia *Kademlia) Stop() {
-	close(kademlia.routingTable.routingTableChan)
+	close(kademlia.network.routingTable.routingTableChan)
 }
 
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
-	routingTable := NewRoutingTable(me)
-	network := &Network{}
-	newKademliaInstance := &Kademlia{alpha, routingTable, network}
+	network := NewNetwork(me)
+	newKademliaInstance := &Kademlia{alpha, network}
 	return newKademliaInstance
 }
 

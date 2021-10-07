@@ -13,6 +13,13 @@ type Network struct {
 	routingTable  *RoutingTable
 }
 
+func NewNetwork(me Contact) *Network {
+	shortlistCh := make(chan []Contact)
+	inactiveNodes := ContactCandidates{[]Contact{}}
+	routingTable := NewRoutingTable(me)
+	return &Network{shortlistCh, inactiveNodes, routingTable}
+}
+
 func (network *Network) Listen() {
 	fmt.Println("Listening.....")
 	p := make([]byte, 2048)
@@ -20,54 +27,45 @@ func (network *Network) Listen() {
 		Port: 8000,
 		IP:   net.ParseIP(""),
 	}
-	ser, err := net.ListenUDP("udp", &addr)
+	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 		return
 	}
 	for {
-		_, remoteaddr, err := ser.ReadFromUDP(p)
+		_, remoteaddr, err := conn.ReadFromUDP(p)
 		if err != nil {
 			fmt.Println("Error reading from UDP stream")
 		} else {
 			incomingMessage := hex.EncodeToString(p)
-			messageType := getTypeFromMessage(incomingMessage)
+			messageType, data, senderIDAsString := preprocessIncomingMessage(incomingMessage)
+			senderID := NewKademliaID(senderIDAsString)
+			sender := NewContact(senderID, remoteaddr.String())
 			switch messageType {
 			case "FIND_NODE_RPC":
-				targetContactAsString := incomingMessage[len(messageType)+1 : len(incomingMessage)-1]
+				targetContactAsString := data
 				targetContact := StringToContact(targetContactAsString)
 				closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
-				senderID := NewKademliaID(incomingMessage[len(messageType)+1+len(targetContactAsString)+1:])
-				sender := NewContact(senderID, remoteaddr.String())
 				shortlistAsString := shortlistToString(&closestContacts)
 				//Send shortlist to sender
-				fmt.Fprintf(ser, shortlistAsString)
-				network.routingTable.routingTableChan <- sender
+				conn.WriteToUDP([]byte(shortlistAsString), remoteaddr)
+				go network.routingTable.AddContact(sender)
 			case "FIND_VALUE_RPC":
 				//TODO: Lookup and return the value that's sought after
 			case "STORE_VALUE_RPC":
 				//TODO: Store value somewhere
 			case "SHORTLIST":
 				//TODO: Append shortlist to old shortlist
+				shortlistAsString := data
+				shortlist := preprocessShortlist(shortlistAsString)
+				network.shortlistCh <- shortlist
 			case "PING":
-				go sendPongResponse(ser, remoteaddr)
+				go network.routingTable.AddContact(sender)
+				sendPongResponse(conn, remoteaddr)
 			case "PONG":
 				//TODO: Update k-buckets
 			}
 		}
-		/*fmt.Printf("Message receive from %v %s \n", remoteaddr, p)
-		if err != nil {
-			fmt.Printf("Some error  %v", err)
-			continue
-		}
-		go sendResponse(ser, remoteaddr)*/
-		//TODO: Check what the response is and send to a different channel depending on response
-		//Things to check:
-		//	- Shortlist
-		//	- Value from a STORE_RPC
-		//	- Ping message
-		//	- FIND_NODE_RPC from another node
-		//	- FIND_VALUE from another node
 	}
 
 }
@@ -117,6 +115,29 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	}
 	shortList := preprocessShortlist(shortListString)
 	network.shortlistCh <- shortList
+}
+
+func preprocessIncomingMessage(message string) (string, string, string) {
+	var messageType string
+	var data string
+	var senderID string
+	m := message[:len(message)-1] //Remove \n character at end
+	numberOfEncounteredSemicolon := 0
+	for _, letter := range m {
+		if string(letter) == ";" {
+			numberOfEncounteredSemicolon += 1
+			continue
+		}
+
+		if numberOfEncounteredSemicolon == 0 {
+			messageType = messageType + string(letter)
+		} else if numberOfEncounteredSemicolon == 1 {
+			data = data + string(letter)
+		} else {
+			senderID = senderID + string(letter)
+		}
+	}
+	return messageType, data, senderID
 }
 
 //When receiving a shortlist it will be a string with the structure that looks like this:
@@ -197,21 +218,4 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
-}
-
-func (network *Network) sendShortlist(recipient *Contact, shortlist *[]Contact) {
-	shortlistAsString := shortlistToString(shortlist)
-
-}
-
-func getTypeFromMessage(message string) string {
-	var messageType string
-	for _, letter := range message {
-		if string(letter) == ";" {
-			break
-		} else {
-			messageType = messageType + string(letter)
-		}
-	}
-	return messageType
 }
