@@ -69,6 +69,11 @@ func (network *Network) Listen() {
 				shortlistAsString := data
 				newShortlist := preprocessShortlist(shortlistAsString)
 				go network.addToShortlist(newShortlist)
+				go network.routingTable.AddContact(sender)
+			case "VALUE":
+				value := data
+				fmt.Println(value)
+				go network.routingTable.AddContact(sender)
 			case "PING":
 				go network.routingTable.AddContact(sender)
 				sendPongResponse(conn, remoteaddr)
