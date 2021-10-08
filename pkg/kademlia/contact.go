@@ -78,7 +78,7 @@ func (candidates *ContactCandidates) RemoveDuplicates() {
 	for _, contact := range candidates.contacts {
 		duplicateExist := false
 		for _, notDuplicateContact := range newContactList {
-			if contact.ID == notDuplicateContact.ID {
+			if contact.ID.String() == notDuplicateContact.ID.String() {
 				duplicateExist = true
 			}
 		}

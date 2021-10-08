@@ -61,25 +61,25 @@ func (network *Network) Listen() {
 				//Send value to sender
 				conn.WriteToUDP([]byte("VALUE;"+value+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
 				// Update buckets
-				go network.routingTable.AddContact(sender)
+				network.routingTable.AddContact(sender)
 			case "STORE_VALUE_RPC":
 				valueID := HashingData([]byte(data))
 				network.storedValues[*valueID] = data
-				go network.routingTable.AddContact(sender)
+				network.routingTable.AddContact(sender)
 			case "SHORTLIST":
 				shortlistAsString := data
 				newShortlist := preprocessShortlist(shortlistAsString)
 				go network.addToShortlist(newShortlist)
-				go network.routingTable.AddContact(sender)
+				network.routingTable.AddContact(sender)
 			case "VALUE":
 				value := data
 				fmt.Println(value)
 				go network.routingTable.AddContact(sender)
 			case "PING":
-				go network.routingTable.AddContact(sender)
+				network.routingTable.AddContact(sender)
 				sendPongResponse(conn, remoteaddr)
 			case "PONG":
-				go network.routingTable.AddContact(sender)
+				network.routingTable.AddContact(sender)
 			}
 		}
 	}
