@@ -48,3 +48,19 @@ func TestPreprocessShortlist(t *testing.T) {
 		}
 	}
 }
+
+func TestPreprocessIncomingMessage(t *testing.T) {
+	message := "FIND_VALUE_RPC;00001;00002\n"
+	messageType, data, senderIDString := preprocessIncomingMessage(message)
+	if messageType != "FIND_VALUE_RPC" || data != "00001" || senderIDString != "00002" {
+		t.Errorf(
+			"Preprocessing of message is incorrect, got: (message type: %s, data: %s, sender: %s) want: (message type: %s, data: %s, sender: %s)",
+			messageType,
+			data,
+			senderIDString,
+			"FIND_VALUE_RPC",
+			"00001",
+			"00002",
+		)
+	}
+}
