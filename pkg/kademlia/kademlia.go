@@ -11,7 +11,6 @@ type Kademlia struct {
 }
 
 func (kademlia *Kademlia) Start() {
-	go kademlia.network.routingTable.UpdateRoutingTable()
 	go kademlia.network.Listen()
 }
 
