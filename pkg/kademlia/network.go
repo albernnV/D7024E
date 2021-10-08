@@ -196,22 +196,24 @@ func StringToContact(contactAsString string) Contact {
 	var address string
 	var id string
 	contactRune := []rune(contactAsString)
-	hasReadAddress := false
+	hasReadID := false
 	//Skip 8 first letters since they always start with "contact("
 	for i := 8; i < len(contactRune); i++ {
 		if string(contactRune[i]) == ")" {
 			break
 		}
 		if string(contactRune[i]) == "," {
-			hasReadAddress = true
+			hasReadID = true
 			i = i + 2
 		}
-		if hasReadAddress {
-			id = id + string(contactRune[i])
-		} else {
+		if hasReadID {
 			address = address + string(contactRune[i])
+		} else {
+			id = id + string(contactRune[i])
 		}
 	}
+	id = id[1 : len(id)-1]                //Remove " from beginning and end of string
+	address = address[1 : len(address)-1] //Remove " from beginning and end of string
 	newKademliaID := NewKademliaID(id)
 	newContact := NewContact(newKademliaID, address)
 	return newContact
