@@ -22,6 +22,7 @@ func NewNetwork(me Contact) *Network {
 	return &Network{shortlistCh, inactiveNodes, routingTable, storedValues}
 }
 
+// Listen acts as a global listener for incoming messages and processes each message depending on the type of the message
 func (network *Network) Listen() {
 	fmt.Println("Listening.....")
 	p := make([]byte, 2048)
@@ -132,6 +133,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	network.shortlistCh <- shortList
 }
 
+// Takes a message and returns message type, message data and sender ID
 func preprocessIncomingMessage(message string) (string, string, string) {
 	var messageType string
 	var data string
@@ -173,6 +175,8 @@ func preprocessShortlist(shortlistString string) []Contact {
 	return shortlist
 }
 
+//Turns a list of contacts into a string with the format
+//	contact("ID", "IP");contact("ID", "IP")...
 func shortlistToString(shortlist *[]Contact) string {
 	var shortlistString string
 	for _, contact := range *shortlist {
@@ -187,7 +191,7 @@ func (network *Network) addToShortlist(shortlist []Contact) {
 	network.shortlistCh <- shortlist
 }
 
-//Takes as input a string structured as "contact(ID, IP) and converts it into a Contact"
+//Takes as input a string structured as contact("ID", "IP") and converts it into a Contact
 func StringToContact(contactAsString string) Contact {
 	var address string
 	var id string
