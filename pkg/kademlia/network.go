@@ -113,7 +113,7 @@ func sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) {
 	//Establish connection
-	conn, err := net.Dial("tcp", contact.Address)
+	conn, err := net.Dial("udp", contact.Address)
 	//Send contact to channel to mark as inactive
 	if err != nil {
 		network.shortlistCh <- []Contact{}
@@ -219,7 +219,7 @@ func StringToContact(contactAsString string) Contact {
 }
 
 func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
-	conn, err := net.Dial("tcp", contact.Address)
+	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
@@ -231,7 +231,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 }
 
 func (network *Network) SendStoreMessage(data []byte, contact *Contact, target Contact) {
-	conn, err := net.Dial("tcp", contact.Address)
+	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
