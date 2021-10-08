@@ -86,18 +86,14 @@ func (network *Network) Listen() {
 
 }
 
-func (network *Network) SendPingMessage() {
-	p := make([]byte, 2048)
-	conn, err := net.Dial("udp", "172.18.0.3:8000")
+func (network *Network) SendPingMessage(contact *Contact) {
+	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Somee error %v", err)
 		return
 	}
-	fmt.Fprintf(conn, "PIIING")
-	_, err = bufio.NewReader(conn).Read(p)
+	fmt.Fprintf(conn, "PING;0;"+network.routingTable.me.ID.String()+"\n")
 	if err == nil {
-		fmt.Printf("%s\n", p)
-	} else {
 		fmt.Printf("Some error %v\n", err)
 	}
 	conn.Close()

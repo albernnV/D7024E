@@ -150,7 +150,3 @@ func HashingData(data []byte) *KademliaID {
 
 	return hashedKademliaID
 }
-
-func (kademlia *Kademlia) SendPing() {
-	kademlia.network.SendPingMessage()
-}
