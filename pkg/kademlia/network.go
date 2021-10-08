@@ -172,6 +172,9 @@ func preprocessShortlist(shortlistString string) []Contact {
 			contactString = contactString + string(letter)
 		}
 	}
+	//Add last contact to shortlist
+	newContact := StringToContact(contactString)
+	shortlist = append(shortlist, newContact)
 	return shortlist
 }
 
