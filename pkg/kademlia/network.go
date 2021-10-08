@@ -11,15 +11,18 @@ type Network struct {
 	shortlistCh   chan []Contact //channel where shortlists from the goroutines will be written to
 	inactiveNodes ContactCandidates
 	routingTable  *RoutingTable
+	storedValues  map[KademliaID]string
 }
 
 func NewNetwork(me Contact) *Network {
 	shortlistCh := make(chan []Contact)
 	inactiveNodes := ContactCandidates{[]Contact{}}
 	routingTable := NewRoutingTable(me)
-	return &Network{shortlistCh, inactiveNodes, routingTable}
+	storedValues := make(map[KademliaID]string)
+	return &Network{shortlistCh, inactiveNodes, routingTable, storedValues}
 }
 
+// Listen acts as a global listener for incoming messages and processes each message depending on the type of the message
 func (network *Network) Listen() {
 	fmt.Println("Listening.....")
 	p := make([]byte, 2048)
@@ -48,22 +51,35 @@ func (network *Network) Listen() {
 				closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
 				shortlistAsString := shortlistToString(&closestContacts)
 				//Send shortlist to sender
-				conn.WriteToUDP([]byte(shortlistAsString), remoteaddr)
+				conn.WriteToUDP([]byte("SHORTLIST;"+shortlistAsString+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
+				// Update buckets
 				go network.routingTable.AddContact(sender)
-			case "FIND_VALUE_RPC":
-				//TODO: Lookup and return the value that's sought after
+			case "FIND_VALUE_RPC": //Lookup and return the value that's sought after
+				IDAsString := data
+				valueID := NewKademliaID(IDAsString)
+				value := network.storedValues[*valueID]
+				//Send value to sender
+				conn.WriteToUDP([]byte("VALUE;"+value+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
+				// Update buckets
+				go network.routingTable.AddContact(sender)
 			case "STORE_VALUE_RPC":
-				//TODO: Store value somewhere
+				valueID := HashingData([]byte(data))
+				network.storedValues[*valueID] = data
+				go network.routingTable.AddContact(sender)
 			case "SHORTLIST":
-				//TODO: Append shortlist to old shortlist
 				shortlistAsString := data
-				shortlist := preprocessShortlist(shortlistAsString)
-				network.shortlistCh <- shortlist
+				newShortlist := preprocessShortlist(shortlistAsString)
+				go network.addToShortlist(newShortlist)
+				go network.routingTable.AddContact(sender)
+			case "VALUE":
+				value := data
+				fmt.Println(value)
+				go network.routingTable.AddContact(sender)
 			case "PING":
 				go network.routingTable.AddContact(sender)
 				sendPongResponse(conn, remoteaddr)
 			case "PONG":
-				//TODO: Update k-buckets
+				go network.routingTable.AddContact(sender)
 			}
 		}
 	}
@@ -117,6 +133,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	network.shortlistCh <- shortList
 }
 
+// Takes a message and returns message type, message data and sender ID
 func preprocessIncomingMessage(message string) (string, string, string) {
 	var messageType string
 	var data string
@@ -158,6 +175,8 @@ func preprocessShortlist(shortlistString string) []Contact {
 	return shortlist
 }
 
+//Turns a list of contacts into a string with the format
+//	contact("ID", "IP");contact("ID", "IP")...
 func shortlistToString(shortlist *[]Contact) string {
 	var shortlistString string
 	for _, contact := range *shortlist {
@@ -168,7 +187,11 @@ func shortlistToString(shortlist *[]Contact) string {
 	return shortlistString
 }
 
-//Takes as input a string structured as "contact(ID, IP) and converts it into a Contact"
+func (network *Network) addToShortlist(shortlist []Contact) {
+	network.shortlistCh <- shortlist
+}
+
+//Takes as input a string structured as contact("ID", "IP") and converts it into a Contact
 func StringToContact(contactAsString string) Contact {
 	var address string
 	var id string
@@ -200,7 +223,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
-	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+"\n")
+	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+";"+network.routingTable.me.ID.String()+"\n")
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
@@ -214,7 +237,7 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 	}
 
 	dataToString := hex.EncodeToString(data)
-	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+target.ID.String())
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+network.routingTable.me.ID.String()) //TODO: Change so that it's sender id instead of target id since the target id can be hashed from the data
 
 	/** A function call to Listen() is needed here but Listen()
 	needs to be redone bc that should be the only function that listens **/
