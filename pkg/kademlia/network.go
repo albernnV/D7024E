@@ -144,6 +144,8 @@ func preprocessIncomingMessage(message string) (string, string, string) {
 		if string(letter) == ";" {
 			numberOfEncounteredSemicolon += 1
 			continue
+		} else if string(letter) == "\n" { //All messages end with a newline character
+			break
 		}
 
 		if numberOfEncounteredSemicolon == 0 {
@@ -172,6 +174,9 @@ func preprocessShortlist(shortlistString string) []Contact {
 			contactString = contactString + string(letter)
 		}
 	}
+	//Add last contact to shortlist
+	newContact := StringToContact(contactString)
+	shortlist = append(shortlist, newContact)
 	return shortlist
 }
 
