@@ -21,15 +21,10 @@ func NewRoutingTable(me Contact) *RoutingTable {
 }
 
 // addContactToBucket adds a new contact to the correct Bucket
-func (routingTable *RoutingTable) addContactToBucket(contact Contact) {
+func (routingTable *RoutingTable) AddContact(contact Contact) {
 	bucketIndex := routingTable.getBucketIndex(contact.ID)
 	bucket := routingTable.buckets[bucketIndex]
 	bucket.AddContact(contact)
-}
-
-// AddContact writes the contact to routingTableChan to be processed by the UpdateRoutingTable goroutine
-func (routingTable *RoutingTable) AddContact(contact Contact) {
-	routingTable.routingTableChan <- contact
 }
 
 // FindClosestContacts finds the count closest Contacts to the target in the RoutingTable
@@ -72,15 +67,4 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 	}
 
 	return IDLength*8 - 1
-}
-
-//This goroutine needs to be started from main so that we can update the routing table whenever we get a message from a node
-func (routingTable *RoutingTable) UpdateRoutingTable() {
-	for {
-		newContact, done := <-routingTable.routingTableChan
-		if done { //Quits goroutine if channel is closed
-			return
-		}
-		routingTable.addContactToBucket(newContact)
-	}
 }

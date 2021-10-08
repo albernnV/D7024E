@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestSendFindNodeRPC(t *testing.T) {
+/*func TestSendFindNodeRPC(t *testing.T) {
 	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
 	node1 := NewContact(kademliaID1, "")
 
@@ -18,7 +18,7 @@ func TestSendFindNodeRPC(t *testing.T) {
 	if len(shortlis) != 0 {
 		t.Errorf("Returned shortlist is not empty, got: %d, want: %d", len(shortlis), 0)
 	}
-}
+}*/
 
 func TestHashingData(t *testing.T) {
 

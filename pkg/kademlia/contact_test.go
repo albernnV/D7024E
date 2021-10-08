@@ -126,7 +126,7 @@ func TestSort(t *testing.T) {
 
 }
 
-func TestLen(t *testing.T) {
+func TestContactLen(t *testing.T) {
 
 	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
 	contact1 := NewContact(kademliaID1, "172.0.0.1:8000")
