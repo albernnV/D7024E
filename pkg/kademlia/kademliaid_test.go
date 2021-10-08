@@ -15,6 +15,25 @@ import (
 		t.Errorf("This is not a KademliaID, got: %v, want: %v", newKademliaID, byteString)
 	}
 }*/
+func TestNewRandomKademliaID(t *testing.T) {
+
+	randomKademliaID1 := NewRandomKademliaID()
+	randomKademliaID2 := NewRandomKademliaID()
+	randomKademliaID3 := NewRandomKademliaID()
+
+	randomKademliaIDs := []*KademliaID{randomKademliaID1, randomKademliaID2, randomKademliaID3}
+	newRandomKademliaIDs := make([]*KademliaID, 0)
+
+	for _, idToAdd := range randomKademliaIDs {
+		for _, id := range newRandomKademliaIDs {
+			if *id == *idToAdd {
+				t.Errorf("This does not return a random KademliaID")
+			}
+		}
+		newRandomKademliaIDs = append(newRandomKademliaIDs, idToAdd)
+	}
+
+}
 
 func TestString(t *testing.T) {
 
@@ -55,11 +74,16 @@ func TestEquals(t *testing.T) {
 func TestLess(t *testing.T) {
 
 	kademliaID := NewKademliaID("0000000000000000000000000000000000000001")
-	otherKademliaID := NewKademliaID("0000000000000000000000000000000000000002")
+	otherKademliaID := NewKademliaID("0000000000000000000000000000000000000005")
 
-	newKademliaID := kademliaID.Less(otherKademliaID)
+	newKademliaID1 := kademliaID.Less(otherKademliaID)
+	newKademliaID2 := otherKademliaID.Less(kademliaID)
 
-	if newKademliaID != true {
-		t.Errorf("This is not less than the otherKademlia ID, got: ,%v, want: %v", newKademliaID, otherKademliaID)
+	if newKademliaID1 != true {
+		t.Errorf("This is not less than the otherKademlia ID, got: ,%v, want: %v", newKademliaID1, otherKademliaID)
+	}
+
+	if newKademliaID2 != false {
+		t.Errorf("This should not be less, got: %v, want: %v", newKademliaID2, otherKademliaID)
 	}
 }
