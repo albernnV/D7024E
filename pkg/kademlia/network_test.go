@@ -102,3 +102,49 @@ func TestSendPongResponse(t *testing.T) {
 	}
 	conn.Close()
 }
+
+func TestSendFindContactMessage(t *testing.T) {
+	contactID := NewKademliaID("0000000000000000000000000000000000000002")
+	contactAddress := "127.0.0.1:8000"
+	node1 := NewContact(contactID, contactAddress)
+
+	p := make([]byte, 2048)
+	addr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP(""),
+	}
+	go network.SendFindContactMessage(&node1, &me)
+	conn, _ := net.ListenUDP("udp", &addr)
+	conn.ReadFromUDP(p)
+	messageType, data, senderID := preprocessIncomingMessage(string(p))
+	if messageType != "FIND_NODE_RPC" {
+		t.Errorf("FIND_NODE_RPC message was not sent")
+	}
+	if data != me.String() || senderID != me.ID.String() {
+		t.Errorf("FIND_NODE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_NODE_RPC;"+me.String()+";"+me.ID.String()+"\n")
+	}
+	conn.Close()
+}
+
+func TestSendFindDataMessage(t *testing.T) {
+	contactID := NewKademliaID("0000000000000000000000000000000000000002")
+	contactAddress := "127.0.0.1:8000"
+	node1 := NewContact(contactID, contactAddress)
+
+	p := make([]byte, 2048)
+	addr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP(""),
+	}
+	dataID := "0000010520300000050000000067800000000002"
+	go network.SendFindDataMessage(dataID, &node1)
+	conn, _ := net.ListenUDP("udp", &addr)
+	conn.ReadFromUDP(p)
+	messageType, data, senderID := preprocessIncomingMessage(string(p))
+	if messageType != "FIND_VALUE_RPC" {
+		t.Errorf("FIND_VALUE_RPC message was not sent")
+	}
+	if data != dataID || senderID != me.ID.String() {
+		t.Errorf("FIND_VALUE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_VALUE_RPC;"+dataID+";"+me.ID.String()+"\n")
+	}
+}
