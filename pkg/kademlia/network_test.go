@@ -1,6 +1,7 @@
 package kademlia
 
 import (
+	"net"
 	"testing"
 )
 
@@ -8,7 +9,7 @@ var stringID string = "0000000000000000000000000000000000000001"
 var kademliaID = NewKademliaID(stringID)
 var me Contact = NewContact(kademliaID, "127.0.0.1:8000")
 
-//var network *Network = NewNetwork(me)
+var network *Network = NewNetwork(me)
 
 func TestStringToContact(t *testing.T) {
 	contactID := "0000000000000000000000000000000000000002"
@@ -63,4 +64,41 @@ func TestPreprocessIncomingMessage(t *testing.T) {
 			"00002",
 		)
 	}
+}
+
+func TestSendPingMessage(t *testing.T) {
+	p := make([]byte, 2048)
+	addr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP(""),
+	}
+	go network.SendPingMessage(&me)
+	conn, _ := net.ListenUDP("udp", &addr)
+	conn.ReadFromUDP(p)
+	incomingMessage := string(p)
+	messageType, _, _ := preprocessIncomingMessage(incomingMessage)
+	if messageType != "PING" {
+		t.Errorf("PING message was not sent")
+	}
+	conn.Close()
+}
+
+func TestSendPongResponse(t *testing.T) {
+	p := make([]byte, 2048)
+	addr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP(""),
+	}
+	homeAddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+	conn, _ := net.ListenUDP("udp", &addr)
+	go network.sendPongResponse(conn, &homeAddr)
+	conn.ReadFromUDP(p)
+	messageType, _, _ := preprocessIncomingMessage(string(p))
+	if messageType != "PONG" {
+		t.Errorf("PONG message was not sent")
+	}
+	conn.Close()
 }

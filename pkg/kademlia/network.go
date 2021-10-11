@@ -77,7 +77,7 @@ func (network *Network) Listen() {
 				go network.routingTable.AddContact(sender)
 			case "PING":
 				network.routingTable.AddContact(sender)
-				sendPongResponse(conn, remoteaddr)
+				network.sendPongResponse(conn, remoteaddr)
 			case "PONG":
 				network.routingTable.AddContact(sender)
 			}
@@ -86,26 +86,22 @@ func (network *Network) Listen() {
 
 }
 
-func (network *Network) SendPingMessage() {
-	p := make([]byte, 2048)
-	conn, err := net.Dial("udp", "172.18.0.3:8000")
+func (network *Network) SendPingMessage(contact *Contact) {
+	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Somee error %v", err)
 		return
 	}
-	fmt.Fprintf(conn, "PIIING")
-	_, err = bufio.NewReader(conn).Read(p)
-	if err == nil {
-		fmt.Printf("%s\n", p)
-	} else {
+	_, sendErr := fmt.Fprintf(conn, "PING;0;"+network.routingTable.me.ID.String()+"\n")
+	if sendErr != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
 	conn.Close()
 
 }
 
-func sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
-	_, err := conn.WriteToUDP([]byte("PONG "), addr)
+func (network *Network) sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
+	_, err := conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()), addr)
 	if err != nil {
 		fmt.Printf("Couldn't send response %v", err)
 	}
