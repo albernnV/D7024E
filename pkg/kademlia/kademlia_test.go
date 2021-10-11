@@ -1,6 +1,7 @@
 package kademlia
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -19,6 +20,25 @@ import (
 		t.Errorf("Returned shortlist is not empty, got: %d, want: %d", len(shortlis), 0)
 	}
 }*/
+
+func TestFindNotContacteNodes(t *testing.T) {
+	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
+	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
+	contact1 := NewContact(kademliaID1, "")
+	contact2 := NewContact(kademliaID2, "")
+	contactedNodes := ContactCandidates{[]Contact{contact1}}
+	shortList := ContactCandidates{[]Contact{contact1, contact2}}
+
+	hasNotBeenContactedList := findNotContactedNodes(&shortList, &contactedNodes)
+	fmt.Println(hasNotBeenContactedList.contacts[0])
+
+	hasNotBeenContactedListTest := ContactCandidates{[]Contact{contact2}}
+
+	if hasNotBeenContactedList.contacts[0] != hasNotBeenContactedListTest.contacts[0] {
+		t.Errorf("This does not find nodes that have not been contacted, got: %v, want: %v", hasNotBeenContactedList, hasNotBeenContactedListTest)
+	}
+
+}
 
 func TestHashingData(t *testing.T) {
 
