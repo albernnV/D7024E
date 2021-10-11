@@ -80,4 +80,25 @@ func TestSendPingMessage(t *testing.T) {
 	if messageType != "PING" {
 		t.Errorf("PING message was not sent")
 	}
+	conn.Close()
+}
+
+func TestSendPongResponse(t *testing.T) {
+	p := make([]byte, 2048)
+	addr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP(""),
+	}
+	homeAddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+	conn, _ := net.ListenUDP("udp", &addr)
+	go network.sendPongResponse(conn, &homeAddr)
+	conn.ReadFromUDP(p)
+	messageType, _, _ := preprocessIncomingMessage(string(p))
+	if messageType != "PONG" {
+		t.Errorf("PONG message was not sent")
+	}
+	conn.Close()
 }
