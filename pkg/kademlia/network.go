@@ -1,7 +1,6 @@
 package kademlia
 
 import (
-	"bufio"
 	"encoding/hex"
 	"fmt"
 	"net"
@@ -84,49 +83,6 @@ func (network *Network) Listen() {
 		}
 	}
 
-}
-
-func (network *Network) SendPingMessage(contact *Contact) {
-	conn, err := net.Dial("udp", contact.Address)
-	if err != nil {
-		fmt.Printf("Somee error %v", err)
-		return
-	}
-	_, sendErr := fmt.Fprintf(conn, "PING;0;"+network.routingTable.me.ID.String()+"\n")
-	if sendErr != nil {
-		fmt.Printf("Some error %v\n", err)
-	}
-	conn.Close()
-
-}
-
-func (network *Network) sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
-	_, err := conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()), addr)
-	if err != nil {
-		fmt.Printf("Couldn't send response %v", err)
-	}
-}
-
-func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) {
-	//Establish connection
-	conn, err := net.Dial("udp", contact.Address)
-	//Send contact to channel to mark as inactive
-	if err != nil {
-		network.shortlistCh <- []Contact{}
-		network.inactiveNodes.Append([]Contact{*contact})
-	}
-	reader := bufio.NewReader(conn)
-	targetAsString := target.String()
-	//Send find node rpc together with the target contact
-	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+";"+network.routingTable.me.ID.String()+"\n")
-	//Wait for showrtlist as answer
-	shortListString, err := reader.ReadString('\n')
-	if err != nil {
-		network.shortlistCh <- []Contact{}
-		network.inactiveNodes.Append([]Contact{*contact})
-	}
-	shortList := preprocessShortlist(shortListString)
-	network.shortlistCh <- shortList
 }
 
 // Takes a message and returns message type, message data and sender ID
@@ -221,16 +177,46 @@ func StringToContact(contactAsString string) Contact {
 
 }
 
+func (network *Network) SendPingMessage(contact *Contact) {
+	conn, err := net.Dial("udp", contact.Address)
+	if err != nil {
+		fmt.Printf("Somee error %v", err)
+		return
+	}
+	_, sendErr := fmt.Fprintf(conn, "PING;0;"+network.routingTable.me.ID.String()+"\n")
+	if sendErr != nil {
+		fmt.Printf("Some error %v\n", err)
+	}
+	conn.Close()
+
+}
+
+func (network *Network) sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
+	_, err := conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()), addr)
+	if err != nil {
+		fmt.Printf("Couldn't send response %v", err)
+	}
+}
+
+func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) {
+	//Establish connection
+	conn, err := net.Dial("udp", contact.Address)
+	//Send contact to channel to mark as inactive
+	if err != nil {
+		network.shortlistCh <- []Contact{}
+		network.inactiveNodes.Append([]Contact{*contact})
+	}
+	targetAsString := target.String()
+	//Send find node rpc together with the target contact
+	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+";"+network.routingTable.me.ID.String()+"\n")
+}
+
 func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
 	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+";"+network.routingTable.me.ID.String()+"\n")
-
-	/** A function call to Listen() is needed here but Listen()
-	needs to be redone bc that should be the only function that listens **/
-
 }
 
 func (network *Network) SendStoreMessage(data []byte, contact *Contact, target Contact) {
@@ -240,8 +226,5 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact, target C
 	}
 
 	dataToString := hex.EncodeToString(data)
-	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+network.routingTable.me.ID.String()) //TODO: Change so that it's sender id instead of target id since the target id can be hashed from the data
-
-	/** A function call to Listen() is needed here but Listen()
-	needs to be redone bc that should be the only function that listens **/
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+network.routingTable.me.ID.String())
 }
