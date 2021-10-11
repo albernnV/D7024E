@@ -133,9 +133,8 @@ func (kademlia *Kademlia) Store(data []byte) {
 
 	//SendStore RPCs
 	for _, nodeToStoreAt := range closestsNodes.contacts {
-		go kademlia.network.SendStoreMessage(data, &nodeToStoreAt, newContact)
+		go kademlia.network.SendStoreMessage(data, &nodeToStoreAt)
 	}
-
 }
 
 func HashingData(data []byte) *KademliaID {
