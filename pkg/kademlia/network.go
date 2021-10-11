@@ -90,9 +90,8 @@ func preprocessIncomingMessage(message string) (string, string, string) {
 	var messageType string
 	var data string
 	var senderID string
-	m := message[:len(message)-1] //Remove \n character at end
 	numberOfEncounteredSemicolon := 0
-	for _, letter := range m {
+	for _, letter := range message {
 		if string(letter) == ";" {
 			numberOfEncounteredSemicolon += 1
 			continue
@@ -188,11 +187,10 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Printf("Some error %v\n", err)
 	}
 	conn.Close()
-
 }
 
 func (network *Network) sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
-	_, err := conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()), addr)
+	_, err := conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()+"\n"), addr)
 	if err != nil {
 		fmt.Printf("Couldn't send response %v", err)
 	}
@@ -209,6 +207,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	targetAsString := target.String()
 	//Send find node rpc together with the target contact
 	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+";"+network.routingTable.me.ID.String()+"\n")
+	conn.Close()
 }
 
 func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
@@ -217,14 +216,15 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 		fmt.Printf("Some error %v\n", err)
 	}
 	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+ID+";"+network.routingTable.me.ID.String()+"\n")
+	conn.Close()
 }
 
-func (network *Network) SendStoreMessage(data []byte, contact *Contact, target Contact) {
+func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
 
-	dataToString := hex.EncodeToString(data)
-	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToString+";"+network.routingTable.me.ID.String())
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+string(data)+";"+network.routingTable.me.ID.String()+"\n")
+	conn.Close()
 }

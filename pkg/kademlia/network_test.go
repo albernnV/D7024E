@@ -51,7 +51,7 @@ func TestPreprocessShortlist(t *testing.T) {
 }
 
 func TestPreprocessIncomingMessage(t *testing.T) {
-	message := "FIND_VALUE_RPC;00001;00002\n"
+	message := "FIND_VALUE_RPC;00001;00002"
 	messageType, data, senderIDString := preprocessIncomingMessage(message)
 	if messageType != "FIND_VALUE_RPC" || data != "00001" || senderIDString != "00002" {
 		t.Errorf(
@@ -121,7 +121,7 @@ func TestSendFindContactMessage(t *testing.T) {
 		t.Errorf("FIND_NODE_RPC message was not sent")
 	}
 	if data != me.String() || senderID != me.ID.String() {
-		t.Errorf("FIND_NODE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_NODE_RPC;"+me.String()+";"+me.ID.String()+"\n")
+		t.Errorf("FIND_NODE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_NODE_RPC;"+me.String()+";"+me.ID.String())
 	}
 	conn.Close()
 }
@@ -145,6 +145,32 @@ func TestSendFindDataMessage(t *testing.T) {
 		t.Errorf("FIND_VALUE_RPC message was not sent")
 	}
 	if data != dataID || senderID != me.ID.String() {
-		t.Errorf("FIND_VALUE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_VALUE_RPC;"+dataID+";"+me.ID.String()+"\n")
+		t.Errorf("FIND_VALUE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_VALUE_RPC;"+dataID+";"+me.ID.String())
 	}
+	conn.Close()
+}
+
+func TestSendStoreMessage(t *testing.T) {
+	dataToStore := "Hej jag heter Albernn"
+
+	contactID := NewKademliaID("0000000000000000000000000000000000000002")
+	contactAddress := "127.0.0.1:8000"
+	node1 := NewContact(contactID, contactAddress)
+
+	p := make([]byte, 2048)
+	addr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP(""),
+	}
+	go network.SendStoreMessage([]byte(dataToStore), &node1)
+	conn, _ := net.ListenUDP("udp", &addr)
+	conn.ReadFromUDP(p)
+	messageType, data, senderID := preprocessIncomingMessage(string(p))
+	if messageType != "STORE_VALUE_RPC" {
+		t.Errorf("STORE_VALUE_RPC message was not sent")
+	}
+	if data != dataToStore || senderID != me.ID.String() {
+		t.Errorf("STORE_VALUE_RPC message did not contain correct information, got: %s want: %s", string(p), "STORE_VALUE_RPC;"+dataToStore+";"+me.ID.String())
+	}
+	conn.Close()
 }
