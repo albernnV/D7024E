@@ -229,3 +229,17 @@ func TestListenFindNode(t *testing.T) {
 	}
 	conn.Close()
 }
+
+func TestListenStoreValue(t *testing.T) {
+	contactID := NewKademliaID("0000000000000000000000000000000000000002")
+	contactAddress := "127.0.0.1:8000"
+	node1 := NewContact(contactID, contactAddress)
+	go network.Listen()
+	dataToStore := "Hej jag heter Olof"
+	dataID := HashingData([]byte(dataToStore))
+	conn, _ := net.Dial("udp", node1.Address)
+	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToStore+";"+me.ID.String()+"\n")
+	if network.storedValues[*dataID] != dataToStore {
+		t.Errorf("File not stored got: %s want: %s", network.storedValues[*dataID], dataToStore)
+	}
+}
