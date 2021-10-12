@@ -79,11 +79,8 @@ func TestLess(t *testing.T) {
 	newKademliaID1 := kademliaID.Less(otherKademliaID)
 	newKademliaID2 := otherKademliaID.Less(kademliaID)
 
-	if newKademliaID1 != true {
-		t.Errorf("This is not less than the otherKademlia ID, got: ,%v, want: %v", newKademliaID1, otherKademliaID)
+	if newKademliaID1 != true || newKademliaID2 != false {
+		t.Errorf("This Less() does not work, got: %v and %v, want: %v", newKademliaID1, newKademliaID2, otherKademliaID)
 	}
 
-	if newKademliaID2 != false {
-		t.Errorf("This should not be less, got: %v, want: %v", newKademliaID2, otherKademliaID)
-	}
 }

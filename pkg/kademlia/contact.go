@@ -47,6 +47,9 @@ func (candidates *ContactCandidates) Append(contacts []Contact) {
 
 // GetContacts returns the first count number of Contacts
 func (candidates *ContactCandidates) GetContacts(count int) []Contact {
+	if count > len(candidates.contacts) {
+		return candidates.contacts[:candidates.Len()]
+	}
 	return candidates.contacts[:count]
 }
 

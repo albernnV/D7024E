@@ -90,14 +90,15 @@ func TestAppend(t *testing.T) {
 
 func TestGetContacts(t *testing.T) {
 
-	kademliaID := NewKademliaID("0000000000000000000000000000000000000001")
-	newContact := NewContact(kademliaID, "172.0.0.1:8000")
+	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
+	newContact := NewContact(kademliaID1, "172.0.0.1:8000")
 	contactCandidates := ContactCandidates{[]Contact{newContact}}
 
-	getContact := contactCandidates.GetContacts(1)
+	getContact1 := contactCandidates.GetContacts(1)
+	getContact2 := contactCandidates.GetContacts(2)
 
-	if getContact[0] != newContact {
-		t.Errorf("This does not return the correct contact, got: %v, want: %v", getContact[0], newContact)
+	if getContact1[0] != newContact || getContact2[0] != newContact {
+		t.Errorf("This does not return the correct contact, got: %v and %v, want: %v", getContact1[0], getContact2[0], newContact)
 	}
 
 }
