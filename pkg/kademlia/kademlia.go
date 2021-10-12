@@ -14,10 +14,6 @@ func (kademlia *Kademlia) Start() {
 	go kademlia.network.Listen()
 }
 
-func (kademlia *Kademlia) Stop() {
-	close(kademlia.network.routingTable.routingTableChan)
-}
-
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
 	network := NewNetwork(me)
 	newKademliaInstance := &Kademlia{alpha, network}
@@ -140,7 +136,7 @@ func (kademlia *Kademlia) Store(data []byte) {
 func HashingData(data []byte) *KademliaID {
 	//hash the data
 	stringToBytes := sha1.New()
-	stringToBytes.Write([]byte(data))
+	stringToBytes.Write(data)
 	hashedData := stringToBytes.Sum(nil)
 
 	// Encodes the hash back to string to make it a new kademlia ID

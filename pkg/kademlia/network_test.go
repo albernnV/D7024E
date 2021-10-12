@@ -1,6 +1,7 @@
 package kademlia
 
 import (
+	"fmt"
 	"net"
 	"testing"
 )
@@ -187,17 +188,44 @@ func TestSendStoreMessage(t *testing.T) {
 	conn.Close()
 }
 
-/*func TestListen(t *testing.T) {
+func TestListen(t *testing.T) {
 	p := make([]byte, 2048)
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "127.0.0.1:8000"
 	node1 := NewContact(contactID, contactAddress)
 	go network.Listen()
+	// TEST FIND_NODE_RPC
 	conn, _ := net.Dial("udp", node1.Address)
 	fmt.Fprintf(conn, "FIND_NODE_RPC;"+me.String()+";"+me.ID.String()+"\n")
 	conn.Read(p)
 	messageType, _, _ := preprocessIncomingMessage(string(p))
 	if messageType != "SHORTLIST" {
-		t.Errorf("SHORTLIST message not sent")
+		t.Errorf("SHORTLIST message not sent got:%s want: %s", messageType, "SHORTLIST")
 	}
-}*/
+	conn.Close()
+	//********************
+}
+
+func TestListenFindNode(t *testing.T) {
+	p := make([]byte, 2048)
+	contactID := NewKademliaID("0000000000000000000000000000000000000002")
+	contactAddress := "127.0.0.1:8000"
+	node1 := NewContact(contactID, contactAddress)
+	go network.Listen()
+
+	dataToStore := "Hej jag heter Albernn"
+	dataID := HashingData([]byte(dataToStore))
+	network.storedValues[*dataID] = dataToStore
+	conn, _ := net.Dial("udp", node1.Address)
+	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+dataID.String()+";"+me.ID.String()+"\n")
+	conn.Read(p)
+	messageType, data, _ := preprocessIncomingMessage(string(p))
+	if messageType != "VALUE" {
+		t.Errorf("VALUE response message was not sent got: %s want: %s", messageType, "VALUE")
+	}
+
+	if data != dataToStore {
+		t.Errorf("Incorrect data recevied got: %s want: %s", data, dataToStore)
+	}
+	conn.Close()
+}
