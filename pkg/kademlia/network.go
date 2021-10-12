@@ -1,7 +1,6 @@
 package kademlia
 
 import (
-	"encoding/hex"
 	"fmt"
 	"net"
 )
@@ -39,7 +38,7 @@ func (network *Network) Listen() {
 		if err != nil {
 			fmt.Println("Error reading from UDP stream")
 		} else {
-			incomingMessage := hex.EncodeToString(p)
+			incomingMessage := string(p)
 			messageType, data, senderIDAsString := preprocessIncomingMessage(incomingMessage)
 			senderID := NewKademliaID(senderIDAsString)
 			sender := NewContact(senderID, remoteaddr.String())
@@ -114,6 +113,9 @@ func preprocessIncomingMessage(message string) (string, string, string) {
 //	"contact(ID, IP);contact(ID, IP)..."
 //This function will convert this string into a list containing all the contacts
 func preprocessShortlist(shortlistString string) []Contact {
+	if shortlistString == "0" {
+		return []Contact{}
+	}
 	var contactString string
 	shortlist := make([]Contact, 0)
 	for _, letter := range shortlistString {
@@ -134,6 +136,9 @@ func preprocessShortlist(shortlistString string) []Contact {
 //Turns a list of contacts into a string with the format
 //	contact("ID", "IP");contact("ID", "IP")...
 func shortlistToString(shortlist *[]Contact) string {
+	if len(*shortlist) == 0 {
+		return "0"
+	}
 	var shortlistString string
 	for _, contact := range *shortlist {
 		contactString := contact.String()

@@ -31,6 +31,12 @@ func TestShortlistToString(t *testing.T) {
 	if shortlistString != correctFormat {
 		t.Errorf("Convertion to string incorrect, got: %s want: %s", shortlistString, correctFormat)
 	}
+
+	emptyShortlist := []Contact{}
+	emptyShortlistString := shortlistToString(&emptyShortlist)
+	if emptyShortlistString != "0" {
+		t.Errorf("Does not handle empty shortlist correctly got: %s want: %s", emptyShortlistString, "0")
+	}
 }
 
 func TestPreprocessShortlist(t *testing.T) {
@@ -47,6 +53,12 @@ func TestPreprocessShortlist(t *testing.T) {
 		if stringToShortlist[i].ID.String() != shortlist[i].ID.String() || stringToShortlist[i].Address != shortlist[i].Address {
 			t.Errorf("Incorrect conversion from string to shortlist, got: %v want: %v", stringToShortlist, shortlist)
 		}
+	}
+
+	//Test empty case
+	emptyShortlist := preprocessShortlist("0")
+	if len(emptyShortlist) != 0 {
+		t.Errorf("Empty shortlist string not handled correctly, got: %v want: %v", emptyShortlist, []Contact{})
 	}
 }
 
@@ -174,3 +186,18 @@ func TestSendStoreMessage(t *testing.T) {
 	}
 	conn.Close()
 }
+
+/*func TestListen(t *testing.T) {
+	p := make([]byte, 2048)
+	contactID := NewKademliaID("0000000000000000000000000000000000000002")
+	contactAddress := "127.0.0.1:8000"
+	node1 := NewContact(contactID, contactAddress)
+	go network.Listen()
+	conn, _ := net.Dial("udp", node1.Address)
+	fmt.Fprintf(conn, "FIND_NODE_RPC;"+me.String()+";"+me.ID.String()+"\n")
+	conn.Read(p)
+	messageType, _, _ := preprocessIncomingMessage(string(p))
+	if messageType != "SHORTLIST" {
+		t.Errorf("SHORTLIST message not sent")
+	}
+}*/
