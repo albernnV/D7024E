@@ -32,11 +32,10 @@ func Cli(kademliaNode *kademlia.Kademlia) {
 
 		case inputCommand == "exit":
 			fmt.Printf("Terminating node")
-			kademliaNode.Stop()
 			os.Exit(0)
 
-		case strings.Contains(inputCommand, "PING"):
-			kademliaNode.SendPing()
+		//case strings.Contains(inputCommand, "PING"):
+		//kademliaNode.SendPing()
 
 		case strings.Contains(inputCommand, "lookup "):
 			inputID := inputCommand[4:]
