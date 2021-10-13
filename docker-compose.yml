@@ -17,6 +17,8 @@ services:
         ipv4_address: 172.18.0.3
   kademliaNodes:
     image: kadlab:latest # Make sure your Docker image has this name.
+    depends_on:
+      - "bootstrappingNode"
     stdin_open: true
     tty: true
     deploy:

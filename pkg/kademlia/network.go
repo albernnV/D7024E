@@ -34,7 +34,7 @@ func (network *Network) Listen() {
 		fmt.Printf("Some error %v\n", err)
 		return
 	}
-	//for !network.closeNetwork {
+	//for {
 	_, remoteaddr, err := conn.ReadFromUDP(p)
 	if err != nil {
 		fmt.Println("Error reading from UDP stream")
