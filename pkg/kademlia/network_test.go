@@ -126,7 +126,7 @@ func TestSendFindContactMessage(t *testing.T) {
 	conn.Close()
 }
 
-func TestSendFindDataMessage(t *testing.T) {
+/*func TestSendFindDataMessage(t *testing.T) {
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "127.0.0.1:8000"
 	node1 := NewContact(contactID, contactAddress)
@@ -173,4 +173,4 @@ func TestSendStoreMessage(t *testing.T) {
 		t.Errorf("STORE_VALUE_RPC message did not contain correct information, got: %s want: %s", string(p), "STORE_VALUE_RPC;"+dataToStore+";"+me.ID.String())
 	}
 	conn.Close()
-}
+}*/
