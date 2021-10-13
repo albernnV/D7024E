@@ -8,8 +8,9 @@ import (
 func main() {
 	// id??? vart genereras och läggs in?
 	alpha := 3
-	me := &kademlia.Contact{}
-	kademliaInstance := kademlia.NewKademliaInstance(alpha, *me)
+	ID := kademlia.NewRandomKademliaID()
+	me := kademlia.NewContact(ID, "")
+	kademliaInstance := kademlia.NewKademliaInstance(alpha, me)
 	go cli.Cli(kademliaInstance)
 	kademliaInstance.Start()
 }

@@ -18,6 +18,10 @@ func (kademlia *Kademlia) Start() {
 	kademlia.LookupContact(&kademlia.network.routingTable.me)
 }
 
+func (kademlia *Kademlia) StartBootstrap() {
+	go kademlia.network.Listen()
+}
+
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
 	network := NewNetwork(me)
 	newKademliaInstance := &Kademlia{alpha, network}
