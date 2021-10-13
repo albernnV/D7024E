@@ -12,6 +12,10 @@ type Kademlia struct {
 
 func (kademlia *Kademlia) Start() {
 	go kademlia.network.Listen()
+	// Join network by perforing lookup on yourself
+	bootstrapNode := NewContact(nil, "172.18.0.3:8000")
+	kademlia.network.SendPingMessage(&bootstrapNode)
+	kademlia.LookupContact(&kademlia.network.routingTable.me)
 }
 
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
