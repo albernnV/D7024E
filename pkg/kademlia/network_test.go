@@ -206,7 +206,7 @@ func TestListen(t *testing.T) {
 	//********************
 }
 
-func TestListenFindNode(t *testing.T) {
+/*func TestListenFindNode(t *testing.T) {
 	p := make([]byte, 2048)
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "127.0.0.1:8000"
@@ -242,4 +242,4 @@ func TestListenStoreValue(t *testing.T) {
 	if network.storedValues[*dataID] != dataToStore {
 		t.Errorf("File not stored got: %s want: %s", network.storedValues[*dataID], dataToStore)
 	}
-}
+}*/
