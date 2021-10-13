@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/albernnV/D7024E/pkg/cli"
 	"github.com/albernnV/D7024E/pkg/kademlia"
 )
@@ -12,5 +14,6 @@ func main() {
 	me := kademlia.NewContact(ID, "")
 	kademliaInstance := kademlia.NewKademliaInstance(alpha, me)
 	go cli.Cli(kademliaInstance)
+	fmt.Println("HELLO")
 	kademliaInstance.Start()
 }
