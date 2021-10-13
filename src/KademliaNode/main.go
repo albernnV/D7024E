@@ -12,5 +12,6 @@ func main() {
 	me := kademlia.NewContact(ID, "")
 	kademliaInstance := kademlia.NewKademliaInstance(alpha, me)
 	go cli.Cli(kademliaInstance)
+	go kademliaInstance.ListenForMessages()
 	kademliaInstance.Start()
 }
