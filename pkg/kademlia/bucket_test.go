@@ -10,7 +10,7 @@ func TestLen(t *testing.T) {
 	contact2 := NewContact(NewKademliaID("0000000000000000000000000000000000000002"), "")
 	bucket.AddContact(contact1)
 	bucket.AddContact(contact2)
-	length := bucket.list.Len()
+	length := bucket.Len()
 	if length != 2 {
 		t.Errorf("This did not return correct length: got: %v, want: %v", length, 2)
 	}
