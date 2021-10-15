@@ -19,7 +19,7 @@ func (kademlia *Kademlia) Start() {
 }
 
 func (kademlia *Kademlia) StartBootstrap() {
-	go kademlia.network.Listen()
+	kademlia.network.Listen()
 }
 
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
