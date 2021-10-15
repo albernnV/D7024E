@@ -8,7 +8,7 @@
 version: "3"
 services:
   bootstrappingNode:
-    image: bootstrap:latest
+    image: kadlab:latest
     #volumes: 
     # - ./:/BootstrappingNode
     #command: touch /src/BootstrappingNode/bootstrap
