@@ -34,6 +34,9 @@ func Cli(kademliaNode *kademlia.Kademlia) {
 			fmt.Printf("Terminating node")
 			os.Exit(0)
 
+		case strings.Contains(inputCommand, "TEST"):
+			kademliaNode.Tes()
+
 		//case strings.Contains(inputCommand, "PING"):
 		//kademliaNode.SendPing()
 

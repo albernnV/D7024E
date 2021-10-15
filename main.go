@@ -11,6 +11,6 @@ func main() {
 	ID := kademlia.NewRandomKademliaID()
 	me := kademlia.NewContact(ID, "")
 	kademliaInstance := kademlia.NewKademliaInstance(alpha, me)
-	go cli.Cli(kademliaInstance)
 	kademliaInstance.Start()
+	cli.Cli(kademliaInstance)
 }

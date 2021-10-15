@@ -37,7 +37,7 @@ func (network *Network) Listen() {
 	for {
 		_, remoteaddr, err := conn.ReadFromUDP(p)
 		if err != nil {
-			fmt.Println("Error reading from UDP stream")
+			fmt.Println(err)
 		} else {
 			incomingMessage := string(p)
 			messageType, data, senderIDAsString := preprocessIncomingMessage(incomingMessage)
