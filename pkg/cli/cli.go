@@ -18,7 +18,7 @@ import (
 func Cli(kademliaNode *kademlia.Kademlia) {
 	for {
 		var inputCommand string
-		fmt.Printf("Commaaaaaaaaaand: \n")
+		fmt.Printf("Command: \n")
 		fmt.Scanln(&inputCommand)
 
 		switch {
