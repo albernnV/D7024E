@@ -56,11 +56,13 @@ func TestContactString(t *testing.T) {
 
 	kademliaID := NewKademliaID("0000000000000000000000000000000000000001")
 	addr := "172.0.0.1:8000"
+	dist := NewKademliaID("0000000000000000000000000000000000000005")
 
 	newContact := NewContact(kademliaID, addr)
+	newContact.distance = dist
 	contactToString := newContact.String()
 
-	testString := `contact("0000000000000000000000000000000000000001", "172.0.0.1:8000")`
+	testString := `contact("0000000000000000000000000000000000000001", "172.0.0.1:8000", "0000000000000000000000000000000000000005")`
 
 	if contactToString != testString {
 		t.Errorf("This does not output the same string, got: %s, want: %s", contactToString, testString)

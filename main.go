@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-	// id??? vart genereras och läggs in?
 	alpha := 3
 	ID := kademlia.NewRandomKademliaID()
 	me := kademlia.NewContact(ID, "")

@@ -10,7 +10,7 @@ services:
   bootstrappingNode:
     stdin_open: true
     tty: true
-    image: bootstrap:latest
+    image: kadlab:latest
     #volumes: 
     # - ./:/BootstrappingNode
     #command: touch /src/BootstrappingNode/bootstrap

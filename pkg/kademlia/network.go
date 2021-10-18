@@ -3,6 +3,7 @@ package kademlia
 import (
 	"fmt"
 	"net"
+	"strings"
 )
 
 type Network struct {
@@ -158,29 +159,17 @@ func (network *Network) addToShortlist(shortlist []Contact) {
 
 //Takes as input a string structured as contact("ID", "IP") and converts it into a Contact
 func StringToContact(contactAsString string) Contact {
-	var address string
-	var id string
-	contactRune := []rune(contactAsString)
-	hasReadID := false
-	//Skip 8 first letters since they always start with "contact("
-	for i := 8; i < len(contactRune); i++ {
-		if string(contactRune[i]) == ")" {
-			break
-		}
-		if string(contactRune[i]) == "," {
-			hasReadID = true
-			i = i + 2
-		}
-		if hasReadID {
-			address = address + string(contactRune[i])
-		} else {
-			id = id + string(contactRune[i])
-		}
-	}
-	id = id[1 : len(id)-1]                //Remove " from beginning and end of string
-	address = address[1 : len(address)-1] //Remove " from beginning and end of string
-	newKademliaID := NewKademliaID(id)
+	s := strings.Split(contactAsString, ", ")
+	ID := s[0]       //[9:len(s[0])-1]
+	address := s[1]  //[1:len(s[1])-1]
+	distance := s[2] //[1:len(s[2])-2]
+
+	ID = ID[9 : len(ID)-1]                   //Remove contact(" and last "
+	address = address[1 : len(address)-1]    //Remove " from beginning and end of string
+	distance = distance[1 : len(distance)-2] //Remove ") at the end of the string
+	newKademliaID := NewKademliaID(ID)
 	newContact := NewContact(newKademliaID, address)
+	newContact.distance = NewKademliaID(distance)
 	return newContact
 
 }
@@ -213,6 +202,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 		network.shortlistCh <- []Contact{}
 		network.inactiveNodes.Append([]Contact{*contact})
 	}
+
 	targetAsString := target.String()
 	//Send find node rpc together with the target contact
 	fmt.Fprintf(conn, "FIND_NODE_RPC;"+targetAsString+";"+network.routingTable.me.ID.String()+"\n")
