@@ -54,8 +54,9 @@ func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 			contactsToSendTo := shortlist.GetContacts(kademlia.alpha)
 			for _, contact := range contactsToSendTo {
 				go kademlia.network.SendFindContactMessage(&contact, target)
+				hasBeenContactedList.Append([]Contact{contact})
 			}
-			kademlia.manageShortlist(kademlia.alpha, &shortlist)
+			kademlia.manageShortlist(len(contactsToSendTo), &shortlist)
 			//Check end condition
 			if shortlist.contacts[0].Less(closestContact) {
 				closestContact = &shortlist.contacts[0]
@@ -69,7 +70,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 				for _, nodeToContact := range nodesToContact.contacts {
 					go kademlia.network.SendFindContactMessage(&nodeToContact, target)
 				}
-				kademlia.manageShortlist(bucketSize, &shortlist)
+				kademlia.manageShortlist(nodesToContact.Len(), &shortlist)
 				//Remove all inactive nodes from the shortlist
 				shortlist.contacts = removeInactiveNodes(shortlist, kademlia.network.inactiveNodes)
 			}
@@ -148,7 +149,7 @@ func (kademlia *Kademlia) Store(data []byte) {
 
 	//SendStore RPCs
 	for _, nodeToStoreAt := range closestsNodes.contacts {
-		go kademlia.network.SendStoreMessage(data, &nodeToStoreAt)
+		kademlia.network.SendStoreMessage(data, &nodeToStoreAt)
 	}
 }
 

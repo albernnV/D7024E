@@ -21,6 +21,12 @@ func TestStringToContact(t *testing.T) {
 	if contact.ID.String() != contactID || contact.Address != contactAddress || contact.distance.String() != contactDistance {
 		t.Errorf("Convertion to contact incorrect, got: (ID: %s, IP: %s, dist: %s) want: (ID: %s, IP: %s, dist: %s)", contact.ID.String(), contact.Address, contact.distance.String(), contactID, contactAddress, contactDistance)
 	}
+
+	contactPlaceholder = `contact("0000000000000000000000000000000000000002", "173.16.0.1", "")`
+	contact = StringToContact(contactPlaceholder)
+	if contact.ID.String() != contactID || contact.Address != contactAddress || contact.distance != nil {
+		t.Errorf("Convertion to contact incorrect, got: (ID: %s, IP: %s, dist: %s) want: (ID: %s, IP: %s, dist: %s)", contact.ID.String(), contact.Address, contact.distance.String(), contactID, contactAddress, contactDistance)
+	}
 }
 
 func TestShortlistToString(t *testing.T) {

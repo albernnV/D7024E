@@ -157,19 +157,23 @@ func (network *Network) addToShortlist(shortlist []Contact) {
 	network.shortlistCh <- shortlist
 }
 
-//Takes as input a string structured as contact("ID", "IP") and converts it into a Contact
+//Takes as input a string structured as contact("ID", "IP", "Distance") and converts it into a Contact
+// or contact("ID", "IP", "") if a distance hasn't been set
 func StringToContact(contactAsString string) Contact {
-	s := strings.Split(contactAsString, ", ")
-	ID := s[0]       //[9:len(s[0])-1]
-	address := s[1]  //[1:len(s[1])-1]
-	distance := s[2] //[1:len(s[2])-2]
+	s := strings.Split(contactAsString, ", ") //Splits string into [contact("ID" "IP" "Distance")]
+	ID := s[0]
+	address := s[1]
+	distance := s[2]
 
-	ID = ID[9 : len(ID)-1]                   //Remove contact(" and last "
-	address = address[1 : len(address)-1]    //Remove " from beginning and end of string
-	distance = distance[1 : len(distance)-2] //Remove ") at the end of the string
+	ID = ID[9 : len(ID)-1]                //Remove contact(" and last "
+	address = address[1 : len(address)-1] //Remove " from beginning and end of string
 	newKademliaID := NewKademliaID(ID)
 	newContact := NewContact(newKademliaID, address)
-	newContact.distance = NewKademliaID(distance)
+
+	if len(distance) > 3 { //A distance has been set for the contact
+		distance = distance[1 : len(distance)-2] //Remove ") at the end of the string
+		newContact.distance = NewKademliaID(distance)
+	}
 	return newContact
 
 }
@@ -219,6 +223,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 }
 
 func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
+	fmt.Println(contact.Address)
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)

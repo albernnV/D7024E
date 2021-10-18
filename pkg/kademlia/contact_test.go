@@ -68,6 +68,13 @@ func TestContactString(t *testing.T) {
 		t.Errorf("This does not output the same string, got: %s, want: %s", contactToString, testString)
 	}
 
+	testString = `contact("0000000000000000000000000000000000000001", "172.0.0.1:8000", "")`
+	contactNilDistance := NewContact(kademliaID, addr)
+	contactToString = contactNilDistance.String()
+
+	if contactToString != testString {
+		t.Errorf("This does not output the same string, got: %s, want: %s", contactToString, testString)
+	}
 }
 
 func TestAppend(t *testing.T) {
