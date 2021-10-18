@@ -91,3 +91,13 @@ func (candidates *ContactCandidates) RemoveDuplicates() {
 	}
 	candidates.contacts = newContactList
 }
+
+func (candidates *ContactCandidates) RemoveContact(contactToRemove *Contact) {
+	newContactList := make([]Contact, 0)
+	for _, contact := range candidates.contacts {
+		if contact != *contactToRemove {
+			newContactList = append(newContactList, contact)
+		}
+	}
+	candidates.contacts = newContactList
+}

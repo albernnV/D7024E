@@ -223,7 +223,6 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 }
 
 func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
-	fmt.Println(contact.Address)
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)

@@ -66,6 +66,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 				nodesToContact := findNotContactedNodes(&shortlist, &hasBeenContactedList)
 				nodesToContact.Sort()
 				nodesToContact.RemoveDuplicates()
+				nodesToContact.RemoveContact(&kademlia.network.routingTable.me) // Remove self from list
 				//Send a RPC to each of the k closest nodes that has not already been contacted
 				for _, nodeToContact := range nodesToContact.contacts {
 					go kademlia.network.SendFindContactMessage(&nodeToContact, target)
@@ -88,6 +89,7 @@ func (kademlia *Kademlia) manageShortlist(alpha int, shortlist *ContactCandidate
 		shortlist.Append(newShortList)
 		shortlist.Sort()
 		shortlist.RemoveDuplicates()
+		shortlist.RemoveContact(&kademlia.network.routingTable.me) //Remove self from shortlist
 		shortlist.contacts = shortlist.GetContacts(bucketSize)
 	}
 
@@ -146,7 +148,6 @@ func (kademlia *Kademlia) Store(data []byte) {
 
 	// Find closest contacts for the key
 	closestsNodes := kademlia.LookupContact(&newContact)
-
 	//SendStore RPCs
 	for _, nodeToStoreAt := range closestsNodes.contacts {
 		kademlia.network.SendStoreMessage(data, &nodeToStoreAt)
