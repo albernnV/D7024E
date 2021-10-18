@@ -1,7 +1,6 @@
 package kademlia
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
@@ -188,7 +187,7 @@ func TestSendStoreMessage(t *testing.T) {
 	conn.Close()
 }
 
-func TestListen(t *testing.T) {
+/*func TestListen(t *testing.T) {
 	p := make([]byte, 2048)
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "127.0.0.1:8000"
@@ -204,7 +203,7 @@ func TestListen(t *testing.T) {
 	}
 	conn.Close()
 	//********************
-}
+}*/
 
 /*func TestListenFindNode(t *testing.T) {
 	p := make([]byte, 2048)

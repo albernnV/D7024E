@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -16,13 +17,15 @@ import (
 // "lookup ID"
 
 func Cli(kademliaNode *kademlia.Kademlia) {
+	reader := bufio.NewReader(os.Stdin)
 	for {
-		var inputCommand string
+		cli := bufio.NewScanner(reader)
 		fmt.Printf("Command: \n")
-		fmt.Scanln(&inputCommand)
+		cli.Scan()
+		inputCommand := cli.Text()
 
 		switch {
-		case strings.Contains(inputCommand, "put "):
+		case strings.Contains(inputCommand, "put"):
 			inputString := inputCommand[4:]
 			kademliaNode.Store([]byte(inputString))
 
@@ -37,11 +40,12 @@ func Cli(kademliaNode *kademlia.Kademlia) {
 		case strings.Contains(inputCommand, "TEST"):
 			kademliaNode.Tes()
 
-		//case strings.Contains(inputCommand, "PING"):
-		//kademliaNode.SendPing()
+		case strings.Contains(inputCommand, "PING "):
+			address := inputCommand[5:]
+			kademliaNode.SendPing(address)
 
 		case strings.Contains(inputCommand, "lookup "):
-			inputID := inputCommand[4:]
+			inputID := inputCommand[7:]
 			ID := kademlia.NewKademliaID(inputID)
 			contactToLookup := kademlia.NewContact(ID, "")
 			shortlist := kademliaNode.LookupContact(&contactToLookup)

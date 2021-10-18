@@ -36,6 +36,7 @@ func (network *Network) Listen() {
 	}
 	for {
 		_, remoteaddr, err := conn.ReadFromUDP(p)
+		remoteaddr.Port = 8000
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -62,6 +63,7 @@ func (network *Network) Listen() {
 				// Update buckets
 				network.routingTable.AddContact(sender)
 			case "STORE_VALUE_RPC":
+				fmt.Println("store: " + data)
 				valueID := HashingData([]byte(data))
 				network.storedValues[*valueID] = data
 				network.routingTable.AddContact(sender)
@@ -76,12 +78,13 @@ func (network *Network) Listen() {
 				go network.routingTable.AddContact(sender)
 			case "PING":
 				network.routingTable.AddContact(sender)
-				network.sendPongResponse(conn, remoteaddr)
+				//network.sendPongResponse(conn, remoteaddr)
+				conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
 			case "PONG":
 				network.routingTable.AddContact(sender)
 			}
 		}
-		conn.Close()
+		//conn.Close()
 	}
 }
 

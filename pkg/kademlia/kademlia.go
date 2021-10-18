@@ -23,6 +23,11 @@ func (kademlia *Kademlia) Tes() {
 	fmt.Println(kademlia.network.routingTable.FindClosestContacts(kademlia.network.routingTable.me.ID, bucketSize))
 }
 
+func (kademlia *Kademlia) SendPing(address string) {
+	newContact := NewContact(nil, address)
+	kademlia.network.SendPingMessage(&newContact)
+}
+
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
 	network := NewNetwork(me)
 	newKademliaInstance := &Kademlia{alpha, network}
@@ -46,8 +51,9 @@ func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 		closerNodeHasBeenFound := true
 		for closerNodeHasBeenFound {
 			//Send find node RPC to alpha number of contacts in the shortlist
-			for i := 0; i < kademlia.alpha; i++ {
-				go kademlia.network.SendFindContactMessage(&shortlist.contacts[i], target)
+			contactsToSendTo := shortlist.GetContacts(kademlia.alpha)
+			for _, contact := range contactsToSendTo {
+				go kademlia.network.SendFindContactMessage(&contact, target)
 			}
 			kademlia.manageShortlist(kademlia.alpha, &shortlist)
 			//Check end condition
