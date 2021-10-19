@@ -1,12 +1,12 @@
 package kademlia
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
 
 var stringID string = "0000000000000000000000000000000000000001"
+var dist string = "0000001000020000000000030000000000000001"
 var kademliaID = NewKademliaID(stringID)
 var me Contact = NewContact(kademliaID, "127.0.0.1:8000")
 
@@ -14,18 +14,29 @@ var network *Network = NewNetwork(me)
 
 func TestStringToContact(t *testing.T) {
 	contactID := "0000000000000000000000000000000000000002"
+	contactDistance := "0000000000000000000000000000000000000005"
 	contactAddress := "173.16.0.1"
-	contactPlaceholder := `contact("0000000000000000000000000000000000000002", "173.16.0.1")`
+	contactPlaceholder := `contact("0000000000000000000000000000000000000002", "173.16.0.1", "0000000000000000000000000000000000000005")`
 	contact := StringToContact(contactPlaceholder)
-	if contact.ID.String() != contactID || contact.Address != contactAddress {
-		t.Errorf("Convertion to contact incorrect, got: (ID: %s, IP: %s) want: (ID: %s, IP: %s)", contact.ID.String(), contact.Address, contactID, contactAddress)
+	if contact.ID.String() != contactID || contact.Address != contactAddress || contact.distance.String() != contactDistance {
+		t.Errorf("Convertion to contact incorrect, got: (ID: %s, IP: %s, dist: %s) want: (ID: %s, IP: %s, dist: %s)", contact.ID.String(), contact.Address, contact.distance.String(), contactID, contactAddress, contactDistance)
+	}
+
+	contactPlaceholder = `contact("0000000000000000000000000000000000000002", "173.16.0.1", "")`
+	contact = StringToContact(contactPlaceholder)
+	if contact.ID.String() != contactID || contact.Address != contactAddress || contact.distance != nil {
+		t.Errorf("Convertion to contact incorrect, got: (ID: %s, IP: %s, dist: %s) want: (ID: %s, IP: %s, dist: %s)", contact.ID.String(), contact.Address, contact.distance.String(), contactID, contactAddress, contactDistance)
 	}
 }
 
 func TestShortlistToString(t *testing.T) {
+	me.distance = NewKademliaID(dist)
+
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "173.16.0.1"
+	contactDistance := "0000000000000000000000000000000000000005"
 	node1 := NewContact(contactID, contactAddress)
+	node1.distance = NewKademliaID(contactDistance)
 	shortlist := []Contact{me, node1}
 	shortlistString := shortlistToString(&shortlist)
 	correctFormat := me.String() + ";" + node1.String()
@@ -41,9 +52,12 @@ func TestShortlistToString(t *testing.T) {
 }
 
 func TestPreprocessShortlist(t *testing.T) {
+	me.distance = NewKademliaID(dist)
+
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "173.16.0.1"
 	node1 := NewContact(contactID, contactAddress)
+	node1.distance = NewKademliaID("0000000000000000000000000000000000000005")
 	shortlist := []Contact{me, node1}
 	shortlistString := shortlistToString(&shortlist)
 	stringToShortlist := preprocessShortlist(shortlistString)
@@ -51,7 +65,7 @@ func TestPreprocessShortlist(t *testing.T) {
 		t.Errorf("Contact list doesn't have the correct length, got: %d want: %d", len(stringToShortlist), len(shortlist))
 	}
 	for i := 0; i < len(shortlist); i++ {
-		if stringToShortlist[i].ID.String() != shortlist[i].ID.String() || stringToShortlist[i].Address != shortlist[i].Address {
+		if stringToShortlist[i].ID.String() != shortlist[i].ID.String() || stringToShortlist[i].Address != shortlist[i].Address || stringToShortlist[i].distance.String() != shortlist[i].distance.String() {
 			t.Errorf("Incorrect conversion from string to shortlist, got: %v want: %v", stringToShortlist, shortlist)
 		}
 	}
@@ -188,7 +202,7 @@ func TestSendStoreMessage(t *testing.T) {
 	conn.Close()
 }
 
-func TestListen(t *testing.T) {
+/*func TestListen(t *testing.T) {
 	p := make([]byte, 2048)
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "127.0.0.1:8000"
@@ -204,7 +218,7 @@ func TestListen(t *testing.T) {
 	}
 	conn.Close()
 	//********************
-}
+}*/
 
 /*func TestListenFindNode(t *testing.T) {
 	p := make([]byte, 2048)

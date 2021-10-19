@@ -56,16 +56,25 @@ func TestContactString(t *testing.T) {
 
 	kademliaID := NewKademliaID("0000000000000000000000000000000000000001")
 	addr := "172.0.0.1:8000"
+	dist := NewKademliaID("0000000000000000000000000000000000000005")
 
 	newContact := NewContact(kademliaID, addr)
+	newContact.distance = dist
 	contactToString := newContact.String()
 
-	testString := `contact("0000000000000000000000000000000000000001", "172.0.0.1:8000")`
+	testString := `contact("0000000000000000000000000000000000000001", "172.0.0.1:8000", "0000000000000000000000000000000000000005")`
 
 	if contactToString != testString {
 		t.Errorf("This does not output the same string, got: %s, want: %s", contactToString, testString)
 	}
 
+	testString = `contact("0000000000000000000000000000000000000001", "172.0.0.1:8000", "")`
+	contactNilDistance := NewContact(kademliaID, addr)
+	contactToString = contactNilDistance.String()
+
+	if contactToString != testString {
+		t.Errorf("This does not output the same string, got: %s, want: %s", contactToString, testString)
+	}
 }
 
 func TestAppend(t *testing.T) {
@@ -196,6 +205,30 @@ func TestRemoveDuplicates(t *testing.T) {
 	contactCandidates.RemoveDuplicates()
 
 	contactCandidatesNoDuplicates := ContactCandidates{[]Contact{contact1, contact3}}
+
+	if contactCandidates.contacts[0].ID != contactCandidatesNoDuplicates.contacts[0].ID || contactCandidates.contacts[1].ID != contactCandidatesNoDuplicates.contacts[1].ID {
+		t.Errorf("This does not remove duplicates, got: %v, want: %v", contactCandidates.contacts, contactCandidatesNoDuplicates.contacts)
+	}
+
+}
+
+func TestRemoveContact(t *testing.T) {
+
+	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
+	contact1 := NewContact(kademliaID1, "172.0.0.1:8000")
+	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000001")
+	contact2 := NewContact(kademliaID2, "172.0.0.2:8000")
+	kademliaID3 := NewKademliaID("0000000000000000000000000000000000000002")
+	contact3 := NewContact(kademliaID3, "172.0.0.3:8000")
+
+	contactCandidates := ContactCandidates{[]Contact{contact1, contact2, contact3}}
+	contactCandidates.RemoveContact(&contact3)
+
+	contactCandidatesNoDuplicates := ContactCandidates{[]Contact{contact1, contact2}}
+
+	if contactCandidates.Len() != contactCandidatesNoDuplicates.Len() {
+		t.Errorf("Contact wasn't removed from list")
+	}
 
 	if contactCandidates.contacts[0].ID != contactCandidatesNoDuplicates.contacts[0].ID || contactCandidates.contacts[1].ID != contactCandidatesNoDuplicates.contacts[1].ID {
 		t.Errorf("This does not remove duplicates, got: %v, want: %v", contactCandidates.contacts, contactCandidatesNoDuplicates.contacts)

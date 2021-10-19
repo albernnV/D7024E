@@ -31,7 +31,7 @@ func (contact *Contact) Less(otherContact *Contact) bool {
 
 // String returns a simple string representation of a Contact
 func (contact *Contact) String() string {
-	return fmt.Sprintf(`contact("%s", "%s")`, contact.ID, contact.Address)
+	return fmt.Sprintf(`contact("%s", "%s", "%s")`, contact.ID.String(), contact.Address, contact.distance.String())
 }
 
 // ContactCandidates definition
@@ -86,6 +86,16 @@ func (candidates *ContactCandidates) RemoveDuplicates() {
 			}
 		}
 		if !duplicateExist {
+			newContactList = append(newContactList, contact)
+		}
+	}
+	candidates.contacts = newContactList
+}
+
+func (candidates *ContactCandidates) RemoveContact(contactToRemove *Contact) {
+	newContactList := make([]Contact, 0)
+	for _, contact := range candidates.contacts {
+		if contact.ID.String() != contactToRemove.ID.String() {
 			newContactList = append(newContactList, contact)
 		}
 	}

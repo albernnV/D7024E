@@ -3,6 +3,7 @@ package kademlia
 import (
 	"encoding/hex"
 	"math/rand"
+	"time"
 )
 
 // the static number of bytes in a KademliaID
@@ -26,6 +27,7 @@ func NewKademliaID(data string) *KademliaID {
 // NewRandomKademliaID returns a new instance of a random KademliaID,
 // change this to a better version if you like
 func NewRandomKademliaID() *KademliaID {
+	rand.Seed(time.Now().UnixNano())
 	newKademliaID := KademliaID{}
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = uint8(rand.Intn(256))
@@ -65,5 +67,8 @@ func (kademliaID KademliaID) CalcDistance(target *KademliaID) *KademliaID {
 
 // String returns a simple string representation of a KademliaID
 func (kademliaID *KademliaID) String() string {
+	if kademliaID == nil {
+		return ""
+	}
 	return hex.EncodeToString(kademliaID[0:IDLength])
 }
