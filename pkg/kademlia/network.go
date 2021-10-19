@@ -7,16 +7,23 @@ import (
 )
 
 type Network struct {
-	shortlistCh      chan []Contact //channel where shortlists from the goroutines will be written to
-	inactiveNodes    ContactCandidates
-	routingTable     *RoutingTable
-	storedValues     map[KademliaID]string
-	closeNetwork     bool
-	listenConnection *net.UDPConn
+	shortlistCh       chan []Contact //channel where shortlists from the goroutines will be written to
+	inactiveNodes     ContactCandidates
+	routingTable      *RoutingTable
+	storedValues      map[KademliaID]string
+	receivedValue     ValueAndSender
+	receviedValueChan chan ValueAndSender
+	listenConnection  *net.UDPConn
+}
+
+type ValueAndSender struct {
+	value  string
+	sender Contact
 }
 
 func NewNetwork(me Contact) *Network {
 	shortlistCh := make(chan []Contact)
+	receivedValueChan := make(chan ValueAndSender)
 	inactiveNodes := ContactCandidates{[]Contact{}}
 	routingTable := NewRoutingTable(me)
 	storedValues := make(map[KademliaID]string)
@@ -31,7 +38,7 @@ func NewNetwork(me Contact) *Network {
 		fmt.Printf("Some error %v\n", err)
 	}
 
-	return &Network{shortlistCh, inactiveNodes, routingTable, storedValues, false, listenConnection}
+	return &Network{shortlistCh, inactiveNodes, routingTable, storedValues, ValueAndSender{}, receivedValueChan, listenConnection}
 }
 
 func (network *Network) LoopListen() {
@@ -71,7 +78,6 @@ func (network *Network) Listen() {
 			// Update buckets
 			network.routingTable.AddContact(sender)
 		case "STORE_VALUE_RPC":
-			fmt.Println("store: " + data)
 			valueID := HashingData([]byte(data))
 			network.storedValues[*valueID] = data
 			network.routingTable.AddContact(sender)
@@ -82,7 +88,11 @@ func (network *Network) Listen() {
 			network.routingTable.AddContact(sender)
 		case "VALUE":
 			value := data
-			fmt.Println(value)
+			if network.receivedValue.value != value {
+				network.receivedValue.value = value
+				network.receivedValue.sender = sender
+				network.receviedValueChan <- network.receivedValue
+			}
 			go network.routingTable.AddContact(sender)
 		case "PING":
 			network.routingTable.AddContact(sender)
@@ -230,7 +240,6 @@ func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
 	}
-
 	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+string(data)+";"+network.routingTable.me.ID.String()+"\n")
 	conn.Close()
 }

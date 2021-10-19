@@ -137,8 +137,10 @@ func (kademlia *Kademlia) LookupData(data string) {
 
 	//loop through all contact and find value
 	for _, nodeToContact := range shortlist.contacts {
-		kademlia.network.SendFindDataMessage(hashToKademliaID.String(), &nodeToContact)
+		go kademlia.network.SendFindDataMessage(hashToKademliaID.String(), &nodeToContact)
 	}
+	receivedData := <-kademlia.network.receviedValueChan
+	fmt.Println("Received " + receivedData.value + " from: " + receivedData.sender.ID.String())
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
@@ -152,6 +154,7 @@ func (kademlia *Kademlia) Store(data []byte) {
 	for _, nodeToStoreAt := range closestsNodes.contacts {
 		kademlia.network.SendStoreMessage(data, &nodeToStoreAt)
 	}
+	fmt.Println("hash: " + fileKademliaID.String())
 }
 
 func HashingData(data []byte) *KademliaID {
