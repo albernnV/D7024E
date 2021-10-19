@@ -95,7 +95,7 @@ func (candidates *ContactCandidates) RemoveDuplicates() {
 func (candidates *ContactCandidates) RemoveContact(contactToRemove *Contact) {
 	newContactList := make([]Contact, 0)
 	for _, contact := range candidates.contacts {
-		if contact != *contactToRemove {
+		if contact.ID.String() != contactToRemove.ID.String() {
 			newContactList = append(newContactList, contact)
 		}
 	}
