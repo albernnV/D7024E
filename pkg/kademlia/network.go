@@ -6,13 +6,37 @@ import (
 	"strings"
 )
 
+// The network file is used to send various messages to different nodes in the network.
+// There are seven different message types that can be sent which are:
+// - FIND_NODE_RPC: Used to find a target node and nodes closest to the target in the network
+// - FIND_VALUE_RPC: Used to retreive data from a node
+// - STORE_VALUE_RPC: Used to store data at a node
+// - SHORTLIST: Used to send a list of contacts to a node, often as a response to a FIND_NODE_RPC
+// - VALUE: Used to send data to a node
+// - PING: Used to ping a node
+// - PONG: Used as a response when a PING is received
+//
+// Messages are structured like MESSAGE_TYPE;DATA;SENDER_ID where
+// - MESSAGE_TYPE is equal to one of the seven message types described above
+// - DATA is equal to the data that is sent with the message
+// - SENDER_ID is the ID of the sender node
+//
+// DATA that should be in a message depending on MESSAGE_TYPE
+// - FIND_NODE_RPC: DATA = contact as a string
+// - FIND_VALUE_RPC: DATA = hashed value of the string data that needs to be retreived
+// - STORE_VALUE_RPC: DATA = string to stored
+// - SHORTLIST: DATA = shortlist as a string
+// - VALUE: DATA = string of data that was requested
+// - PING: DATA = 0
+// - PONG: DATA = 0
+
 type Network struct {
 	shortlistCh       chan []Contact //channel where shortlists from the goroutines will be written to
 	inactiveNodes     ContactCandidates
 	routingTable      *RoutingTable
 	storedValues      map[KademliaID]string // Used to store data that are received in a STORE_VALUE_RPC
 	receivedValue     ValueAndSender        // Used to temporary store data that has been requested by a FIND_VALUE_RPC
-	receviedValueChan chan ValueAndSender   // Temporary
+	receviedValueChan chan ValueAndSender   // Temporarily store data that has been received from a VALUE message
 	listenConnection  *net.UDPConn
 }
 
@@ -60,12 +84,14 @@ func (network *Network) Listen() {
 	}
 }
 
+// Handles a message and preforms various functions depending in the message type
+// Every time a message is received the routing table is updated with the sender contact
 func (network *Network) handleMessage(message string, remoteaddr *net.UDPAddr) {
 	messageType, data, senderIDAsString := preprocessIncomingMessage(message)
 	senderID := NewKademliaID(senderIDAsString)
 	sender := NewContact(senderID, remoteaddr.String())
 	switch messageType {
-	case "FIND_NODE_RPC":
+	case "FIND_NODE_RPC": // Send sortlist of nodes closest to target back to sender
 		targetContactAsString := data
 		targetContact := StringToContact(targetContactAsString)
 		closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
@@ -82,16 +108,16 @@ func (network *Network) handleMessage(message string, remoteaddr *net.UDPAddr) {
 		network.listenConnection.WriteToUDP([]byte("VALUE;"+value+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
 		// Update buckets
 		network.routingTable.AddContact(sender)
-	case "STORE_VALUE_RPC":
+	case "STORE_VALUE_RPC": // Store the data that was accopanied with the message
 		valueID := HashingData([]byte(data))
 		network.storedValues[*valueID] = data
 		network.routingTable.AddContact(sender)
-	case "SHORTLIST":
+	case "SHORTLIST": // Append the received shortlist to the current shortlist
 		shortlistAsString := data
 		newShortlist := preprocessShortlist(shortlistAsString)
 		go network.addToShortlist(newShortlist)
 		network.routingTable.AddContact(sender)
-	case "VALUE":
+	case "VALUE": // Send value to the channel to be processed by another goroutine
 		value := data
 		if network.receivedValue.value != value {
 			network.receivedValue.value = value
@@ -99,7 +125,7 @@ func (network *Network) handleMessage(message string, remoteaddr *net.UDPAddr) {
 			network.receviedValueChan <- network.receivedValue
 		}
 		go network.routingTable.AddContact(sender)
-	case "PING":
+	case "PING": //Send a PONG response message
 		network.routingTable.AddContact(sender)
 		network.listenConnection.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
 	case "PONG":
@@ -133,8 +159,8 @@ func preprocessIncomingMessage(message string) (string, string, string) {
 }
 
 //When receiving a shortlist it will be a string with the structure that looks like this:
-//	"contact(ID, IP);contact(ID, IP)..."
-//This function will convert this string into a list containing all the contacts
+//	"contact(ID, IP, distance)contact(ID, IP, distance)..."
+//This function will convert this string into a list containing all the contacts in the string
 func preprocessShortlist(shortlistString string) []Contact {
 	if shortlistString == "0" {
 		return []Contact{}
@@ -150,14 +176,11 @@ func preprocessShortlist(shortlistString string) []Contact {
 			contactString = contactString + string(letter)
 		}
 	}
-	//Add last contact to shortlist
-	//newContact := StringToContact(contactString)
-	//shortlist = append(shortlist, newContact)
 	return shortlist
 }
 
 //Turns a list of contacts into a string with the format
-//	contact("ID", "IP")contact("ID", "IP")...
+//	contact("ID", "IP", "distance")contact("ID", "IP", "distance")...
 func shortlistToString(shortlist *[]Contact) string {
 	if len(*shortlist) == 0 {
 		return "0"
@@ -194,7 +217,7 @@ func StringToContact(contactAsString string) Contact {
 	return newContact
 }
 
-// Sends a PING message to see if a contact is online
+// Sends a PING message to see if a contact is online and waits for a PONG response
 func (network *Network) SendPingMessage(contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
@@ -209,7 +232,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	conn.Close()
 }
 
-// Sends a FIND_NODE_RPC to a contact which Listen() will process
+// Sends a FIND_NODE_RPC to a contact
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) {
 	//Establish connection
 	conn, err := net.Dial("udp", contact.Address)
@@ -225,7 +248,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	conn.Close()
 }
 
-// Sends a FIND_VALUE_RPC to a contact which Listen() will process
+// Sends a FIND_VALUE_RPC to a contact
 func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
@@ -235,7 +258,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	conn.Close()
 }
 
-// Sends a STORE_VALUE_RPC to a contact which Listen() will process
+// Sends a STORE_VALUE_RPC to a contact
 func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
