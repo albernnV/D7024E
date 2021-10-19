@@ -42,7 +42,7 @@ func (network *Network) LoopListen() {
 
 // Listen acts as a global listener for incoming messages and processes each message depending on the type of the message
 func (network *Network) Listen() {
-	p := make([]byte, 2048)
+	p := make([]byte, 3048)
 	_, remoteaddr, err := network.listenConnection.ReadFromUDP(p)
 	remoteaddr.Port = 8000
 	if err != nil {
