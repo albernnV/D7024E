@@ -126,16 +126,16 @@ func removeInactiveNodes(shortlist ContactCandidates, inactiveNodes ContactCandi
 	return cleanShortlist
 }
 
-func (kademlia *Kademlia) LookupData(hash string) {
+func (kademlia *Kademlia) LookupData(data string) {
 	// Make the hash into a kademliaID to be able to make a new contact
-	hashToKademliaID := NewKademliaID(hash)
+	hashToKademliaID := HashingData([]byte(data))
 	kademliaToContact := NewContact(hashToKademliaID, "")
 	// Look up the closests contacts
 	shortlist := kademlia.LookupContact(&kademliaToContact)
 
 	//loop through all contact and find value
 	for _, nodeToContact := range shortlist.contacts {
-		kademlia.network.SendFindDataMessage(hash, &nodeToContact)
+		kademlia.network.SendFindDataMessage(hashToKademliaID.String(), &nodeToContact)
 	}
 }
 
