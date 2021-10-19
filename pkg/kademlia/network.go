@@ -10,9 +10,9 @@ type Network struct {
 	shortlistCh       chan []Contact //channel where shortlists from the goroutines will be written to
 	inactiveNodes     ContactCandidates
 	routingTable      *RoutingTable
-	storedValues      map[KademliaID]string
-	receivedValue     ValueAndSender
-	receviedValueChan chan ValueAndSender
+	storedValues      map[KademliaID]string // Used to store data that are received in a STORE_VALUE_RPC
+	receivedValue     ValueAndSender        // Used to temporary store data that has been requested by a FIND_VALUE_RPC
+	receviedValueChan chan ValueAndSender   // Temporary
 	listenConnection  *net.UDPConn
 }
 
@@ -29,7 +29,6 @@ func NewNetwork(me Contact) *Network {
 	routingTable := NewRoutingTable(me)
 	storedValues := make(map[KademliaID]string)
 
-	fmt.Println("Listening.....")
 	addr := net.UDPAddr{
 		Port: 8000,
 		IP:   net.ParseIP(""),
@@ -57,50 +56,54 @@ func (network *Network) Listen() {
 		fmt.Println(err)
 	} else {
 		incomingMessage := string(p)
-		messageType, data, senderIDAsString := preprocessIncomingMessage(incomingMessage)
-		senderID := NewKademliaID(senderIDAsString)
-		sender := NewContact(senderID, remoteaddr.String())
-		switch messageType {
-		case "FIND_NODE_RPC":
-			targetContactAsString := data
-			targetContact := StringToContact(targetContactAsString)
-			closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
-			shortlistAsString := shortlistToString(&closestContacts)
-			//Send shortlist to sender
-			network.listenConnection.WriteToUDP([]byte("SHORTLIST;"+shortlistAsString+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
-			// Update buckets
-			go network.routingTable.AddContact(sender)
-		case "FIND_VALUE_RPC": //Lookup and return the value that's sought after
-			IDAsString := data
-			valueID := NewKademliaID(IDAsString)
-			value := network.storedValues[*valueID]
-			//Send value to sender
-			network.listenConnection.WriteToUDP([]byte("VALUE;"+value+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
-			// Update buckets
-			network.routingTable.AddContact(sender)
-		case "STORE_VALUE_RPC":
-			valueID := HashingData([]byte(data))
-			network.storedValues[*valueID] = data
-			network.routingTable.AddContact(sender)
-		case "SHORTLIST":
-			shortlistAsString := data
-			newShortlist := preprocessShortlist(shortlistAsString)
-			go network.addToShortlist(newShortlist)
-			network.routingTable.AddContact(sender)
-		case "VALUE":
-			value := data
-			if network.receivedValue.value != value {
-				network.receivedValue.value = value
-				network.receivedValue.sender = sender
-				network.receviedValueChan <- network.receivedValue
-			}
-			go network.routingTable.AddContact(sender)
-		case "PING":
-			network.routingTable.AddContact(sender)
-			network.listenConnection.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
-		case "PONG":
-			network.routingTable.AddContact(sender)
+		network.handleMessage(incomingMessage, remoteaddr)
+	}
+}
+
+func (network *Network) handleMessage(message string, remoteaddr *net.UDPAddr) {
+	messageType, data, senderIDAsString := preprocessIncomingMessage(message)
+	senderID := NewKademliaID(senderIDAsString)
+	sender := NewContact(senderID, remoteaddr.String())
+	switch messageType {
+	case "FIND_NODE_RPC":
+		targetContactAsString := data
+		targetContact := StringToContact(targetContactAsString)
+		closestContacts := network.routingTable.FindClosestContacts(targetContact.ID, bucketSize)
+		shortlistAsString := shortlistToString(&closestContacts)
+		//Send shortlist to sender
+		network.listenConnection.WriteToUDP([]byte("SHORTLIST;"+shortlistAsString+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
+		// Update buckets
+		go network.routingTable.AddContact(sender)
+	case "FIND_VALUE_RPC": //Lookup and return the value that's sought after
+		IDAsString := data
+		valueID := NewKademliaID(IDAsString)
+		value := network.storedValues[*valueID]
+		//Send value to sender
+		network.listenConnection.WriteToUDP([]byte("VALUE;"+value+";"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
+		// Update buckets
+		network.routingTable.AddContact(sender)
+	case "STORE_VALUE_RPC":
+		valueID := HashingData([]byte(data))
+		network.storedValues[*valueID] = data
+		network.routingTable.AddContact(sender)
+	case "SHORTLIST":
+		shortlistAsString := data
+		newShortlist := preprocessShortlist(shortlistAsString)
+		go network.addToShortlist(newShortlist)
+		network.routingTable.AddContact(sender)
+	case "VALUE":
+		value := data
+		if network.receivedValue.value != value {
+			network.receivedValue.value = value
+			network.receivedValue.sender = sender
+			network.receviedValueChan <- network.receivedValue
 		}
+		go network.routingTable.AddContact(sender)
+	case "PING":
+		network.routingTable.AddContact(sender)
+		network.listenConnection.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()+"\n"), remoteaddr)
+	case "PONG":
+		network.routingTable.AddContact(sender)
 	}
 }
 
@@ -204,14 +207,6 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Printf("Some error %v\n", err)
 	}
 	conn.Close()
-}
-
-// Sends back a PONG response after receiving a PING message
-func (network *Network) sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
-	_, err := conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()+"\n"), addr)
-	if err != nil {
-		fmt.Printf("Couldn't send response %v", err)
-	}
 }
 
 // Sends a FIND_NODE_RPC to a contact which Listen() will process

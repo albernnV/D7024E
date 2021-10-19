@@ -10,8 +10,6 @@ var dist string = "0000001000020000000000030000000000000001"
 var kademliaID = NewKademliaID(stringID)
 var me Contact = NewContact(kademliaID, "127.0.0.1:8000")
 
-var network *Network = NewNetwork(me)
-
 func TestStringToContact(t *testing.T) {
 	contactID := "0000000000000000000000000000000000000002"
 	contactDistance := "0000000000000000000000000000000000000005"
@@ -39,7 +37,7 @@ func TestShortlistToString(t *testing.T) {
 	node1.distance = NewKademliaID(contactDistance)
 	shortlist := []Contact{me, node1}
 	shortlistString := shortlistToString(&shortlist)
-	correctFormat := me.String() + ";" + node1.String()
+	correctFormat := me.String() + node1.String()
 	if shortlistString != correctFormat {
 		t.Errorf("Convertion to string incorrect, got: %s want: %s", shortlistString, correctFormat)
 	}
@@ -95,39 +93,13 @@ func TestPreprocessIncomingMessage(t *testing.T) {
 
 func TestSendPingMessage(t *testing.T) {
 	p := make([]byte, 2048)
-	addr := net.UDPAddr{
-		Port: 8000,
-		IP:   net.ParseIP(""),
-	}
-	go network.SendPingMessage(&me)
-	conn, _ := net.ListenUDP("udp", &addr)
-	conn.ReadFromUDP(p)
+	kademliaInstance.network.SendPingMessage(&me)
+	kademliaInstance.network.listenConnection.ReadFromUDP(p)
 	incomingMessage := string(p)
 	messageType, _, _ := preprocessIncomingMessage(incomingMessage)
-	if messageType != "PING" {
+	if messageType != "PONG" {
 		t.Errorf("PING message was not sent")
 	}
-	conn.Close()
-}
-
-func TestSendPongResponse(t *testing.T) {
-	p := make([]byte, 2048)
-	addr := net.UDPAddr{
-		Port: 8000,
-		IP:   net.ParseIP(""),
-	}
-	homeAddr := net.UDPAddr{
-		Port: 8000,
-		IP:   net.ParseIP("127.0.0.1"),
-	}
-	conn, _ := net.ListenUDP("udp", &addr)
-	go network.sendPongResponse(conn, &homeAddr)
-	conn.ReadFromUDP(p)
-	messageType, _, _ := preprocessIncomingMessage(string(p))
-	if messageType != "PONG" {
-		t.Errorf("PONG message was not sent")
-	}
-	conn.Close()
 }
 
 func TestSendFindContactMessage(t *testing.T) {
@@ -136,13 +108,8 @@ func TestSendFindContactMessage(t *testing.T) {
 	node1 := NewContact(contactID, contactAddress)
 
 	p := make([]byte, 2048)
-	addr := net.UDPAddr{
-		Port: 8000,
-		IP:   net.ParseIP(""),
-	}
-	go network.SendFindContactMessage(&node1, &me)
-	conn, _ := net.ListenUDP("udp", &addr)
-	conn.ReadFromUDP(p)
+	go kademliaInstance.network.SendFindContactMessage(&node1, &me)
+	kademliaInstance.network.listenConnection.ReadFromUDP(p)
 	messageType, data, senderID := preprocessIncomingMessage(string(p))
 	if messageType != "FIND_NODE_RPC" {
 		t.Errorf("FIND_NODE_RPC message was not sent")
@@ -150,7 +117,6 @@ func TestSendFindContactMessage(t *testing.T) {
 	if data != me.String() || senderID != me.ID.String() {
 		t.Errorf("FIND_NODE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_NODE_RPC;"+me.String()+";"+me.ID.String())
 	}
-	conn.Close()
 }
 
 func TestSendFindDataMessage(t *testing.T) {
@@ -159,14 +125,9 @@ func TestSendFindDataMessage(t *testing.T) {
 	node1 := NewContact(contactID, contactAddress)
 
 	p := make([]byte, 2048)
-	addr := net.UDPAddr{
-		Port: 8000,
-		IP:   net.ParseIP(""),
-	}
 	dataID := "0000010520300000050000000067800000000002"
-	go network.SendFindDataMessage(dataID, &node1)
-	conn, _ := net.ListenUDP("udp", &addr)
-	conn.ReadFromUDP(p)
+	go kademliaInstance.network.SendFindDataMessage(dataID, &node1)
+	kademliaInstance.network.listenConnection.ReadFromUDP(p)
 	messageType, data, senderID := preprocessIncomingMessage(string(p))
 	if messageType != "FIND_VALUE_RPC" {
 		t.Errorf("FIND_VALUE_RPC message was not sent")
@@ -174,7 +135,6 @@ func TestSendFindDataMessage(t *testing.T) {
 	if data != dataID || senderID != me.ID.String() {
 		t.Errorf("FIND_VALUE_RPC message did not contain correct information, got: %s want: %s", string(p), "FIND_VALUE_RPC;"+dataID+";"+me.ID.String())
 	}
-	conn.Close()
 }
 
 func TestSendStoreMessage(t *testing.T) {
@@ -185,13 +145,8 @@ func TestSendStoreMessage(t *testing.T) {
 	node1 := NewContact(contactID, contactAddress)
 
 	p := make([]byte, 2048)
-	addr := net.UDPAddr{
-		Port: 8000,
-		IP:   net.ParseIP(""),
-	}
-	go network.SendStoreMessage([]byte(dataToStore), &node1)
-	conn, _ := net.ListenUDP("udp", &addr)
-	conn.ReadFromUDP(p)
+	go kademliaInstance.network.SendStoreMessage([]byte(dataToStore), &node1)
+	kademliaInstance.network.listenConnection.ReadFromUDP(p)
 	messageType, data, senderID := preprocessIncomingMessage(string(p))
 	if messageType != "STORE_VALUE_RPC" {
 		t.Errorf("STORE_VALUE_RPC message was not sent")
@@ -199,61 +154,96 @@ func TestSendStoreMessage(t *testing.T) {
 	if data != dataToStore || senderID != me.ID.String() {
 		t.Errorf("STORE_VALUE_RPC message did not contain correct information, got: %s want: %s", string(p), "STORE_VALUE_RPC;"+dataToStore+";"+me.ID.String())
 	}
-	conn.Close()
 }
 
-/*func TestListen(t *testing.T) {
+func TestHandleMessageFindNode(t *testing.T) {
+	remoteaddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
 	p := make([]byte, 2048)
-	contactID := NewKademliaID("0000000000000000000000000000000000000002")
-	contactAddress := "127.0.0.1:8000"
-	node1 := NewContact(contactID, contactAddress)
-	go network.Listen()
-	// TEST FIND_NODE_RPC
-	conn, _ := net.Dial("udp", node1.Address)
-	fmt.Fprintf(conn, "FIND_NODE_RPC;"+me.String()+";"+me.ID.String()+"\n")
-	conn.Read(p)
+	incomingMessage := "FIND_NODE_RPC;" + me.String() + ";0000000000000000000000000000000000000002"
+	go kademliaInstance.network.handleMessage(incomingMessage, &remoteaddr)
+	kademliaInstance.network.listenConnection.ReadFromUDP(p)
 	messageType, _, _ := preprocessIncomingMessage(string(p))
 	if messageType != "SHORTLIST" {
-		t.Errorf("SHORTLIST message not sent got:%s want: %s", messageType, "SHORTLIST")
+		t.Errorf("SHORTLIST message was not sent")
 	}
-	conn.Close()
-	//********************
-}*/
-
-/*func TestListenFindNode(t *testing.T) {
-	p := make([]byte, 2048)
-	contactID := NewKademliaID("0000000000000000000000000000000000000002")
-	contactAddress := "127.0.0.1:8000"
-	node1 := NewContact(contactID, contactAddress)
-	go network.Listen()
-
-	dataToStore := "Hej jag heter Albernn"
-	dataID := HashingData([]byte(dataToStore))
-	network.storedValues[*dataID] = dataToStore
-	conn, _ := net.Dial("udp", node1.Address)
-	fmt.Fprintf(conn, "FIND_VALUE_RPC;"+dataID.String()+";"+me.ID.String()+"\n")
-	conn.Read(p)
-	messageType, data, _ := preprocessIncomingMessage(string(p))
-	if messageType != "VALUE" {
-		t.Errorf("VALUE response message was not sent got: %s want: %s", messageType, "VALUE")
-	}
-
-	if data != dataToStore {
-		t.Errorf("Incorrect data recevied got: %s want: %s", data, dataToStore)
-	}
-	conn.Close()
 }
 
-func TestListenStoreValue(t *testing.T) {
+func TestHandleMessageFindValue(t *testing.T) {
+	hashedData := HashingData([]byte("hej jag heter Albernn"))
+	remoteaddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+	p := make([]byte, 2048)
+	incomingMessage := "FIND_VALUE_RPC;" + hashedData.String() + ";0000000000000000000000000000000000000002"
+	go kademliaInstance.network.handleMessage(incomingMessage, &remoteaddr)
+	kademliaInstance.network.listenConnection.ReadFromUDP(p)
+	messageType, _, _ := preprocessIncomingMessage(string(p))
+	if messageType != "VALUE" {
+		t.Errorf("SHORTLIST message was not sent")
+	}
+}
+
+func TestHandleMessageStoreValue(t *testing.T) {
+	dataToStore := "hej jag heter Albernn"
+	dataHash := HashingData([]byte(dataToStore))
+	remoteaddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+	incomingMessage := "STORE_VALUE_RPC;" + dataToStore + ";0000000000000000000000000000000000000002"
+	kademliaInstance.network.handleMessage(incomingMessage, &remoteaddr)
+	if kademliaInstance.network.storedValues[*dataHash] != dataToStore {
+		t.Errorf("Data was not stored")
+	}
+}
+
+func TestHandleMessageShortlist(t *testing.T) {
 	contactID := NewKademliaID("0000000000000000000000000000000000000002")
 	contactAddress := "127.0.0.1:8000"
 	node1 := NewContact(contactID, contactAddress)
-	go network.Listen()
-	dataToStore := "Hej jag heter Olof"
-	dataID := HashingData([]byte(dataToStore))
-	conn, _ := net.Dial("udp", node1.Address)
-	fmt.Fprintf(conn, "STORE_VALUE_RPC;"+dataToStore+";"+me.ID.String()+"\n")
-	if network.storedValues[*dataID] != dataToStore {
-		t.Errorf("File not stored got: %s want: %s", network.storedValues[*dataID], dataToStore)
+	shortlist := []Contact{me, node1}
+	shortlistString := shortlistToString(&shortlist)
+	remoteaddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
 	}
-}*/
+	incomingMessage := "SHORTLIST;" + shortlistString + ";0000000000000000000000000000000000000002"
+	go kademliaInstance.network.handleMessage(incomingMessage, &remoteaddr)
+	receivedShortlist := <-kademliaInstance.network.shortlistCh
+	if receivedShortlist[0].ID.String() != shortlist[0].ID.String() || receivedShortlist[1].ID.String() != shortlist[1].ID.String() {
+		t.Errorf("Shortlist was not received got: %v want: %v", receivedShortlist, shortlist)
+	}
+}
+
+func TestHandleMessageValue(t *testing.T) {
+	data := "hej jag heter Albernn"
+	remoteaddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+	incomingMessage := "VALUE;" + data + ";0000000000000000000000000000000000000002"
+	go kademliaInstance.network.handleMessage(incomingMessage, &remoteaddr)
+	receivedValue := <-kademliaInstance.network.receviedValueChan
+	if receivedValue.value != data || receivedValue.sender.ID.String() != "0000000000000000000000000000000000000002" {
+		t.Errorf("Correct value not received got: %s want: %s", receivedValue.value, data)
+	}
+}
+
+func TestHandleMessagePing(t *testing.T) {
+	remoteaddr := net.UDPAddr{
+		Port: 8000,
+		IP:   net.ParseIP("127.0.0.1"),
+	}
+	p := make([]byte, 2048)
+	incomingMessage := "PING;0;0000000000000000000000000000000000000002"
+	go kademliaInstance.network.handleMessage(incomingMessage, &remoteaddr)
+	kademliaInstance.network.listenConnection.ReadFromUDP(p)
+	messageType, _, _ := preprocessIncomingMessage(string(p))
+	if messageType != "PONG" {
+		t.Errorf("PONG message was not sent")
+	}
+}

@@ -22,15 +22,6 @@ func (kademlia *Kademlia) Start() {
 	kademlia.LookupContact(&kademlia.network.routingTable.me)
 }
 
-func (kademlia *Kademlia) Tes() {
-	fmt.Println(kademlia.network.routingTable.FindClosestContacts(kademlia.network.routingTable.me.ID, bucketSize))
-}
-
-func (kademlia *Kademlia) SendPing(address string) {
-	newContact := NewContact(nil, address)
-	kademlia.network.SendPingMessage(&newContact)
-}
-
 // Returns a kademlia instance to be able to use it as a reference
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
 	network := NewNetwork(me)

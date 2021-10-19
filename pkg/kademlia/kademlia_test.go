@@ -7,9 +7,9 @@ import (
 var kademliaInstance *Kademlia = NewKademliaInstance(1, me)
 
 func TestManageShortList(t *testing.T) {
-	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
-	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
-	kademliaID3 := NewKademliaID("0000000000000000000000000000000000000003")
+	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000002")
+	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000003")
+	kademliaID3 := NewKademliaID("0000000000000000000000000000000000000004")
 	contact1 := NewContact(kademliaID1, "")
 	contact2 := NewContact(kademliaID2, "")
 	contact3 := NewContact(kademliaID3, "")
