@@ -13,6 +13,7 @@ type Network struct {
 	closeNetwork  bool
 }
 
+// Creates a network to able to use it as a reference
 func NewNetwork(me Contact) *Network {
 	shortlistCh := make(chan []Contact)
 	inactiveNodes := ContactCandidates{[]Contact{}}
@@ -182,6 +183,7 @@ func StringToContact(contactAsString string) Contact {
 
 }
 
+// Sends a PING message to see if a contact is online
 func (network *Network) SendPingMessage(contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
@@ -195,6 +197,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	conn.Close()
 }
 
+// Sends back a PONG response after receiving a PING message
 func (network *Network) sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	_, err := conn.WriteToUDP([]byte("PONG;0;"+network.routingTable.me.ID.String()+"\n"), addr)
 	if err != nil {
@@ -202,6 +205,7 @@ func (network *Network) sendPongResponse(conn *net.UDPConn, addr *net.UDPAddr) {
 	}
 }
 
+// Sends a FIND_NODE_RPC to a contact which Listen() will process
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) {
 	//Establish connection
 	conn, err := net.Dial("udp", contact.Address)
@@ -216,6 +220,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	conn.Close()
 }
 
+// Sends a FIND_VALUE_RPC to a contact which Listen() will process
 func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
@@ -225,6 +230,7 @@ func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
 	conn.Close()
 }
 
+// Sends a STORE_VALUE_RPC to a contact which Listen() will process
 func (network *Network) SendStoreMessage(data []byte, contact *Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {

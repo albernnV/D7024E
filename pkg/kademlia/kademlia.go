@@ -10,6 +10,7 @@ type Kademlia struct {
 	network *Network
 }
 
+//Starting function for the nodes by pinging the bootstrap node to be able to join the network
 func (kademlia *Kademlia) Start() {
 	go kademlia.network.Listen()
 	// Join network by perforing lookup on yourself
@@ -22,12 +23,14 @@ func (kademlia *Kademlia) StartBootstrap() {
 	kademlia.network.Listen()
 }
 
+// Returns a kademlia instance to be able to use it as a reference
 func NewKademliaInstance(alpha int, me Contact) *Kademlia {
 	network := NewNetwork(me)
 	newKademliaInstance := &Kademlia{alpha, network}
 	return newKademliaInstance
 }
 
+//Returns k closests nodes in a shortlist which includes cleaning up the shortlist and sending find contact message to the nodes
 func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	//Find k closest nodes
 	closestNodes := kademlia.network.routingTable.FindClosestContacts(target.ID, kademlia.alpha)
@@ -70,6 +73,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact) *ContactCandidates {
 	return &shortlist
 }
 
+//Manages the shortlist by sorting, removing the duplicates, removes "itself" and keeps k size of the shortlist
 func (kademlia *Kademlia) manageShortlist(alpha int, shortlist *ContactCandidates) {
 	for i := 0; i < alpha; i++ {
 		newShortList := <-kademlia.network.shortlistCh
@@ -98,6 +102,7 @@ func findNotContactedNodes(shortlist *ContactCandidates, contactedNodes *Contact
 	return ContactCandidates{hasNotBeenContactedList}
 }
 
+//Returns a clean shortlist without the inactive nodes
 func removeInactiveNodes(shortlist ContactCandidates, inactiveNodes ContactCandidates) []Contact {
 	cleanShortlist := make([]Contact, 0)
 	for _, contact := range shortlist.contacts {
@@ -114,6 +119,7 @@ func removeInactiveNodes(shortlist ContactCandidates, inactiveNodes ContactCandi
 	return cleanShortlist
 }
 
+//LookupData fetches the hashed data object from the closests nodes and sends a find data message
 func (kademlia *Kademlia) LookupData(hash string) {
 	// Make the hash into a kademliaID to be able to make a new contact
 	hashToKademliaID := NewKademliaID(hash)
@@ -127,6 +133,7 @@ func (kademlia *Kademlia) LookupData(hash string) {
 	}
 }
 
+//Store finds the closests nodes for the hashed data object and sends a store message to those nodes
 func (kademlia *Kademlia) Store(data []byte) {
 	//Hash the data to get a newKademliaID
 	fileKademliaID := HashingData(data)
@@ -141,6 +148,7 @@ func (kademlia *Kademlia) Store(data []byte) {
 	}
 }
 
+//Hashes the data and returns the hash as a NewKademliaID
 func HashingData(data []byte) *KademliaID {
 	//hash the data
 	stringToBytes := sha1.New()

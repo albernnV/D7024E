@@ -6,21 +6,6 @@ import (
 
 var kademliaInstance *Kademlia = NewKademliaInstance(1, me)
 
-/*func TestSendFindNodeRPC(t *testing.T) {
-	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
-	node1 := NewContact(kademliaID1, "")
-
-	kademliaInstance := NewKademliaInstance(3, node1)
-
-	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
-	node2 := NewContact(kademliaID2, "")
-	go kademliaInstance.network.Listen()
-	go kademliaInstance.network.SendFindContactMessage(&node1, &node2)
-	shortlis := <-kademliaInstance.network.shortlistCh
-	if len(shortlis) != 0 {
-		t.Errorf("Returned shortlist is not empty, got: %d, want: %d", len(shortlis), 0)
-	}
-}*/
 func TestManageShortList(t *testing.T) {
 	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
 	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")
@@ -35,7 +20,7 @@ func TestManageShortList(t *testing.T) {
 	shortList := ContactCandidates{[]Contact{contact3, contact1, contact2, contact2}}
 	newShortlist := []Contact{contact1}
 	go func() {
-		kademliaInstance.network.shortlistCh <- newShortlist
+		kademliaInstance.network.shortlistCh <- newShortlist //newshortlist gets written to achenneö
 	}()
 	kademliaInstance.manageShortlist(1, &shortList)
 
@@ -87,11 +72,11 @@ func TestRemoveInactiveNodes(t *testing.T) {
 
 func TestHashingData(t *testing.T) {
 
-	s := []byte("Hejsan vad gör du?")
+	data := []byte("Hejsan vad gör du?")
 
-	hashedData := HashingData(s)
+	hashedData := HashingData(data)
 
-	sha1Hash := "c85373d0e75022b70dc94c99db4094ae80ab98d7"
+	sha1Hash := "c85373d0e75022b70dc94c99db4094ae80ab98d7" //sha1 hash for data
 
 	if hashedData.String() != sha1Hash {
 		t.Errorf("The hashed data is not correct, got: %s, want: %s", hashedData.String(), sha1Hash)
