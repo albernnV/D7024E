@@ -76,7 +76,7 @@ func TestHashingData(t *testing.T) {
 
 	hashedData := HashingData(data)
 
-	sha1Hash := "c85373d0e75022b70dc94c99db4094ae80ab98d7" //sha1 hash for data
+	sha1Hash := "c85373d0e75022b70dc94c99db4094ae80ab98d7" //sha1-hash for data
 
 	if hashedData.String() != sha1Hash {
 		t.Errorf("The hashed data is not correct, got: %s, want: %s", hashedData.String(), sha1Hash)
