@@ -94,7 +94,7 @@ func (kademlia *Kademlia) retreiveValues(alpha int, valueSoughtAfter string) Val
 	var currentValue ValueAndSender
 	for i := 0; i < alpha; i++ {
 		receivedData := <-kademlia.network.receviedValueChan
-		if receivedData.value != currentValue.value {
+		if receivedData.value != currentValue.value && receivedData.value == valueSoughtAfter {
 			currentValue = receivedData
 		}
 	}
