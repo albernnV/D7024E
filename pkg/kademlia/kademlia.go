@@ -90,6 +90,17 @@ func (kademlia *Kademlia) manageShortlist(alpha int, shortlist *ContactCandidate
 	}
 }
 
+func (kademlia *Kademlia) retreiveValues(alpha int, valueSoughtAfter string) ValueAndSender {
+	var currentValue ValueAndSender
+	for i := 0; i < alpha; i++ {
+		receivedData := <-kademlia.network.receviedValueChan
+		if receivedData.value != currentValue.value {
+			currentValue = receivedData
+		}
+	}
+	return currentValue
+}
+
 //Returns the contacts in the shortlis that haven't been contacted
 func findNotContactedNodes(shortlist *ContactCandidates, contactedNodes *ContactCandidates) ContactCandidates {
 	hasNotBeenContactedList := make([]Contact, 0)
@@ -134,9 +145,9 @@ func (kademlia *Kademlia) LookupData(data string) {
 
 	//loop through all contact and find value
 	for _, nodeToContact := range shortlist.contacts {
-		go kademlia.network.SendFindDataMessage(hashToKademliaID.String(), &nodeToContact)
+		go kademlia.network.SendFindDataMessage(hashToKademliaID.String(), nodeToContact)
 	}
-	receivedData := <-kademlia.network.receviedValueChan
+	receivedData := kademlia.retreiveValues(shortlist.Len(), data)
 	fmt.Println("Received " + receivedData.value + " from: " + receivedData.sender.ID.String())
 }
 
