@@ -32,6 +32,21 @@ func TestManageShortList(t *testing.T) {
 
 }
 
+func TestRetreiveValues(t *testing.T) {
+	kademliaID3 := NewKademliaID("0000000000000000000000000000000000000004")
+	contact3 := NewContact(kademliaID3, "")
+	contact3.distance = NewKademliaID("0000000000000000000000000000000000000003")
+	value := "hej jag heter Albernn"
+	vs := ValueAndSender{value, contact3}
+	go func() {
+		kademliaInstance.network.receviedValueChan <- vs
+	}()
+	retreivedValue := kademliaInstance.retreiveValues(1, value)
+	if retreivedValue.value != value || retreivedValue.sender != contact3 {
+		t.Errorf("The sought after value was not retreived got: %s want: %s", retreivedValue.value, value)
+	}
+}
+
 func TestFindNotContacteNodes(t *testing.T) {
 	kademliaID1 := NewKademliaID("0000000000000000000000000000000000000001")
 	kademliaID2 := NewKademliaID("0000000000000000000000000000000000000002")

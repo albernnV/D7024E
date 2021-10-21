@@ -126,7 +126,7 @@ func TestSendFindDataMessage(t *testing.T) {
 
 	p := make([]byte, 2048)
 	dataID := "0000010520300000050000000067800000000002"
-	go kademliaInstance.network.SendFindDataMessage(dataID, &node1)
+	go kademliaInstance.network.SendFindDataMessage(dataID, node1)
 	kademliaInstance.network.listenConnection.ReadFromUDP(p)
 	messageType, data, senderID := preprocessIncomingMessage(string(p))
 	if messageType != "FIND_VALUE_RPC" {

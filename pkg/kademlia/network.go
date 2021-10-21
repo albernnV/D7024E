@@ -119,11 +119,9 @@ func (network *Network) handleMessage(message string, remoteaddr *net.UDPAddr) {
 		network.routingTable.AddContact(sender)
 	case "VALUE": // Send value to the channel to be processed by another goroutine
 		value := data
-		if network.receivedValue.value != value {
-			network.receivedValue.value = value
-			network.receivedValue.sender = sender
-			network.receviedValueChan <- network.receivedValue
-		}
+		network.receivedValue.value = value
+		network.receivedValue.sender = sender
+		network.receviedValueChan <- network.receivedValue
 		go network.routingTable.AddContact(sender)
 	case "PING": //Send a PONG response message
 		network.routingTable.AddContact(sender)
@@ -249,7 +247,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 }
 
 // Sends a FIND_VALUE_RPC to a contact
-func (network *Network) SendFindDataMessage(ID string, contact *Contact) {
+func (network *Network) SendFindDataMessage(ID string, contact Contact) {
 	conn, err := net.Dial("udp", contact.Address)
 	if err != nil {
 		fmt.Printf("Some error %v\n", err)
